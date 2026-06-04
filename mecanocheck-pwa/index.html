@@ -1214,7 +1214,7 @@ async function lancerRechercheGarages(lat,lon,label){
   try{
     const osmTag=FILTRE_OSM[currentFiltre]||'amenity';
     const query=`[out:json][timeout:30];(node[${osmTag}=${currentFiltre}](around:10000,${lat},${lon});way[${osmTag}=${currentFiltre}](around:10000,${lat},${lon}));out center 30;`;
-    const oRes=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+    const oRes=await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(query)}`);
     const oData=await oRes.json();const elements=oData.elements||[];
     if(!elements.length){list.innerHTML=`<div class="card-sm" style="color:var(--m);">Aucun résultat. Essayez un autre filtre.</div>`;return;}
     list.innerHTML=elements.map(g=>{
