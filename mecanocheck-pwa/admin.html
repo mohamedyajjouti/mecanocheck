@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MécanoCheck — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --g:#00D68F;--gd:#00A86B;--gl:#E0FFF4;
+    --r:#FF3B5C;--b:#5B5FEF;--o:#FF6B35;--y:#FFBB00;
+    --bg:#0A0E1A;--card:#131929;--card2:#1A2236;
+    --t:#F0F4FF;--m:#7B8599;--border:#1E2D45;
+    --rad:14px;--rads:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;}
+  
+  /* LOGIN */
+  #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:400px;text-align:center;}
+  .login-logo{width:56px;height:56px;background:linear-gradient(135deg,var(--g),var(--gd));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;}
+  .login-title{font-size:22px;font-weight:800;margin-bottom:6px;}
+  .login-sub{font-size:14px;color:var(--m);margin-bottom:28px;}
+  .login-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 16px;font-size:15px;color:var(--t);font-family:inherit;margin-bottom:12px;outline:none;}
+  .login-input:focus{border-color:var(--g);}
+  .login-btn{width:100%;background:var(--g);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .login-btn:hover{background:var(--gd);}
+  .login-error{color:var(--r);font-size:13px;margin-top:10px;display:none;}
+
+  /* DASHBOARD */
+  #dashboard{display:none;}
+  
+  /* SIDEBAR */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--card);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;z-index:100;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+  .sidebar-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--g),var(--gd));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .sidebar-logo-text{font-size:15px;font-weight:800;}
+  .sidebar-logo-badge{font-size:10px;font-weight:700;background:var(--b);color:#fff;padding:2px 8px;border-radius:20px;margin-left:auto;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:14px;font-weight:600;color:var(--m);transition:all 0.15s;border-left:3px solid transparent;}
+  .nav-item:hover{color:var(--t);background:rgba(255,255,255,0.03);}
+  .nav-item.active{color:var(--g);border-left-color:var(--g);background:rgba(0,214,143,0.06);}
+  .nav-item-icon{font-size:18px;width:20px;text-align:center;}
+  .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);}
+  .logout-btn{width:100%;background:rgba(255,59,92,0.1);color:var(--r);border:1px solid rgba(255,59,92,0.2);border-radius:var(--rads);padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+
+  /* MAIN */
+  .main{margin-left:240px;padding:28px;min-height:100vh;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page-title{font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:6px;}
+  .page-sub{font-size:14px;color:var(--m);margin-bottom:24px;}
+
+  /* STAT CARDS */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);padding:18px;}
+  .stat-label{font-size:11px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+  .stat-value{font-size:28px;font-weight:900;letter-spacing:-1px;margin-bottom:4px;}
+  .stat-change{font-size:12px;font-weight:600;}
+  .stat-change.up{color:var(--g);}
+  .stat-change.down{color:var(--r);}
+
+  /* TABLE */
+  .table-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);overflow:hidden;margin-bottom:20px;}
+  .table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .table-title{font-size:15px;font-weight:800;}
+  .table-action{background:none;border:1px solid var(--border);border-radius:var(--rads);padding:7px 14px;font-family:inherit;font-size:12px;font-weight:700;color:var(--t);cursor:pointer;}
+  table{width:100%;border-collapse:collapse;}
+  th{padding:11px 16px;font-size:11px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:0.06em;text-align:left;border-bottom:1px solid var(--border);}
+  td{padding:13px 16px;font-size:13px;border-bottom:1px solid rgba(30,45,69,0.5);}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+
+  /* BADGES */
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+  .badge-ok{background:rgba(0,214,143,0.15);color:var(--g);}
+  .badge-warn{background:rgba(255,107,53,0.15);color:var(--o);}
+  .badge-danger{background:rgba(255,59,92,0.15);color:var(--r);}
+  .badge-blue{background:rgba(91,95,239,0.15);color:var(--b);}
+
+  /* CHART BAR */
+  .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);padding:20px;margin-bottom:20px;}
+  .chart-title{font-size:15px;font-weight:800;margin-bottom:16px;}
+  .bar-chart{display:flex;align-items:flex-end;gap:8px;height:120px;}
+  .bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .bar{width:100%;background:linear-gradient(180deg,var(--g),var(--gd));border-radius:4px 4px 0 0;transition:height 0.3s;}
+  .bar-label{font-size:10px;color:var(--m);font-weight:600;}
+  .bar-val{font-size:11px;font-weight:700;color:var(--g);}
+
+  /* CONFIG */
+  .config-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rad);padding:20px;margin-bottom:16px;}
+  .config-title{font-size:15px;font-weight:800;margin-bottom:16px;}
+  .config-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .config-row:last-child{border-bottom:none;}
+  .config-label{font-size:14px;font-weight:600;flex:1;}
+  .config-sub{font-size:12px;color:var(--m);margin-top:2px;}
+  .config-input{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--t);font-family:inherit;width:200px;outline:none;}
+  .config-input:focus{border-color:var(--g);}
+  .config-btn{background:var(--g);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+  textarea.config-input{width:100%;height:80px;resize:vertical;margin-top:8px;}
+
+  /* NOTIF */
+  .notif-form{display:flex;flex-direction:column;gap:12px;}
+  .notif-input{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;color:var(--t);font-family:inherit;outline:none;}
+  .notif-input:focus{border-color:var(--g);}
+  .notif-btn{background:var(--b);color:#fff;border:none;border-radius:8px;padding:13px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:14px;font-weight:600;display:none;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);}
+  .toast.show{display:flex;align-items:center;gap:10px;}
+  .toast.success{border-color:var(--g);color:var(--g);}
+  .toast.error{border-color:var(--r);color:var(--r);}
+
+  /* LOADING */
+  .loading{text-align:center;padding:40px;color:var(--m);font-size:14px;}
+  .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--g);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:8px;vertical-align:-4px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media(max-width:900px){
+    .sidebar{width:60px;}
+    .sidebar-logo-text,.sidebar-logo-badge,.nav-item span,.sidebar-footer{display:none;}
+    .main{margin-left:60px;}
+    .stats-grid{grid-template-columns:1fr 1fr;}
+    .nav-item{justify-content:center;padding:12px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🔧</div>
+    <div class="login-title">MécanoCheck Admin</div>
+    <div class="login-sub">Accès réservé aux administrateurs</div>
+    <input type="password" id="pwd-input" class="login-input" placeholder="Mot de passe admin" onkeydown="if(event.key==='Enter')login()">
+    <button class="login-btn" onclick="login()">Connexion</button>
+    <div class="login-error" id="login-error">Mot de passe incorrect</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🔧</div>
+      <span class="sidebar-logo-text">MécanoCheck</span>
+      <span class="sidebar-logo-badge">ADMIN</span>
+    </div>
+    <div class="nav-item active" onclick="showPage('stats')">
+      <span class="nav-item-icon">📊</span>
+      <span>Statistiques</span>
+    </div>
+    <div class="nav-item" onclick="showPage('analyses')">
+      <span class="nav-item-icon">🔍</span>
+      <span>Analyses</span>
+    </div>
+    <div class="nav-item" onclick="showPage('errors')">
+      <span class="nav-item-icon">⚠️</span>
+      <span>Erreurs</span>
+    </div>
+    <div class="nav-item" onclick="showPage('config')">
+      <span class="nav-item-icon">⚙️</span>
+      <span>Configuration</span>
+    </div>
+    <div class="nav-item" onclick="showPage('notifs')">
+      <span class="nav-item-icon">🔔</span>
+      <span>Notifications</span>
+    </div>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- STATS PAGE -->
+    <div id="page-stats" class="page active">
+      <div class="page-title">Tableau de bord</div>
+      <div class="page-sub" id="last-refresh">Chargement...</div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Analyses aujourd'hui</div>
+          <div class="stat-value" id="stat-today" style="color:var(--g)">—</div>
+          <div class="stat-change up" id="stat-today-change">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Analyses ce mois</div>
+          <div class="stat-value" id="stat-month" style="color:var(--b)">—</div>
+          <div class="stat-change up">↑ En cours</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total analyses</div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-change up">Depuis le début</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Erreurs remontées</div>
+          <div class="stat-value" id="stat-errors" style="color:var(--r)">—</div>
+          <div class="stat-change">Ce mois</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">Analyses — 7 derniers jours</div>
+        <div class="bar-chart" id="bar-chart">
+          <div class="loading"><span class="spinner"></span>Chargement...</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Dernières analyses</div>
+          <button class="table-action" onclick="loadAnalyses()">Actualiser</button>
+        </div>
+        <div id="recent-table"><div class="loading"><span class="spinner"></span>Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- ANALYSES PAGE -->
+    <div id="page-analyses" class="page">
+      <div class="page-title">Toutes les analyses</div>
+      <div class="page-sub">Historique complet des analyses effectuées</div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Analyses</div>
+          <button class="table-action" onclick="loadAllAnalyses()">Actualiser</button>
+        </div>
+        <div id="all-analyses-table"><div class="loading"><span class="spinner"></span>Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- ERRORS PAGE -->
+    <div id="page-errors" class="page">
+      <div class="page-title">Erreurs remontées</div>
+      <div class="page-sub">Bugs signalés par les utilisateurs</div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Erreurs</div>
+          <button class="table-action" onclick="loadErrors()">Actualiser</button>
+        </div>
+        <div id="errors-table"><div class="loading"><span class="spinner"></span>Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- CONFIG PAGE -->
+    <div id="page-config" class="page">
+      <div class="page-title">Configuration</div>
+      <div class="page-sub">Modifier les paramètres de l'application</div>
+
+      <div class="config-card">
+        <div class="config-title">Limites d'utilisation</div>
+        <div class="config-row">
+          <div>
+            <div class="config-label">Analyses gratuites / mois</div>
+            <div class="config-sub">Nombre d'analyses pour les utilisateurs gratuits</div>
+          </div>
+          <input type="number" class="config-input" id="cfg-free" value="3" min="1" max="50">
+          <button class="config-btn" onclick="saveConfig('free_analyses', document.getElementById('cfg-free').value)">Sauvegarder</button>
+        </div>
+        <div class="config-row">
+          <div>
+            <div class="config-label">Prix Premium (€/mois)</div>
+            <div class="config-sub">Abonnement conducteur</div>
+          </div>
+          <input type="number" class="config-input" id="cfg-premium" value="4.99" step="0.01">
+          <button class="config-btn" onclick="saveConfig('price_premium', document.getElementById('cfg-premium').value)">Sauvegarder</button>
+        </div>
+        <div class="config-row">
+          <div>
+            <div class="config-label">Prix Pro (€/mois)</div>
+            <div class="config-sub">Abonnement garagiste</div>
+          </div>
+          <input type="number" class="config-input" id="cfg-pro" value="19.99" step="0.01">
+          <button class="config-btn" onclick="saveConfig('price_pro', document.getElementById('cfg-pro').value)">Sauvegarder</button>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <div class="config-title">Message de maintenance</div>
+        <div class="config-row" style="flex-direction:column;align-items:flex-start;">
+          <div>
+            <div class="config-label">Bannière d'information</div>
+            <div class="config-sub">Affiché en haut de l'appli (laisser vide pour désactiver)</div>
+          </div>
+          <textarea class="config-input" id="cfg-banner" placeholder="Ex: Maintenance prévue le 15/06 de 2h à 4h du matin"></textarea>
+          <button class="config-btn" style="margin-top:8px;" onclick="saveConfig('banner', document.getElementById('cfg-banner').value)">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS PAGE -->
+    <div id="page-notifs" class="page">
+      <div class="page-title">Notifications</div>
+      <div class="page-sub">Envoyer des messages aux utilisateurs</div>
+
+      <div class="config-card">
+        <div class="config-title">Nouvelle notification push</div>
+        <div class="notif-form">
+          <div>
+            <div style="font-size:12px;color:var(--m);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Titre</div>
+            <input type="text" class="notif-input" id="notif-title" placeholder="Ex: Mise à jour MécanoCheck 🔧">
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--m);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Message</div>
+            <textarea class="notif-input" id="notif-body" rows="3" placeholder="Ex: Nouvelle fonctionnalité disponible — section Jeune Conducteur améliorée !"></textarea>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--m);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Cible</div>
+            <select class="notif-input" id="notif-target" style="width:auto;">
+              <option value="all">Tous les utilisateurs</option>
+              <option value="premium">Utilisateurs Premium</option>
+              <option value="free">Utilisateurs gratuits</option>
+            </select>
+          </div>
+          <button class="notif-btn" onclick="sendNotification()">🔔 Envoyer la notification</button>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <div class="config-title">Historique des notifications</div>
+        <div id="notif-history"><div class="loading">Aucune notification envoyée</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// CONFIG — REMPLACE CES VALEURS
+const SUPABASE_URL = 'https://ebldnyiyhyjgamvaakbr.supabase.co/rest/v1/
+';
+const SUPABASE_KEY = 'sb_publishable_ql7XpdSKjyM4o63vks9c1A_q6beOhy7';
+const ADMIN_PASSWORD = '4xr33xD0utEeo#';
+
+let supabase = null;
+let notifHistory = JSON.parse(localStorage.getItem('notif_history') || '[]');
+
+function initSupabase() {
+  if (!supabase && SUPABASE_URL !== 'https://ebldnyiyhyjgamvaakbr.supabase.co/rest/v1/') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+}
+
+function login() {
+  const pwd = document.getElementById('pwd-input').value;
+  if (pwd === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    initSupabase();
+    loadDashboard();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function logout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('pwd-input').value = '';
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'analyses') loadAllAnalyses();
+  if (name === 'errors') loadErrors();
+  if (name === 'notifs') renderNotifHistory();
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function loadDashboard() {
+  document.getElementById('last-refresh').textContent = 'Dernière mise à jour : ' + new Date().toLocaleString('fr-FR');
+  if (!supabase) { showMockData(); return; }
+  try {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const month = new Date(); month.setDate(1); month.setHours(0,0,0,0);
+
+    const { count: total } = await supabase.from('analyses').select('*', { count: 'exact', head: true });
+    const { count: todayCount } = await supabase.from('analyses').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString());
+    const { count: monthCount } = await supabase.from('analyses').select('*', { count: 'exact', head: true }).gte('created_at', month.toISOString());
+    const { count: errCount } = await supabase.from('errors').select('*', { count: 'exact', head: true }).gte('created_at', month.toISOString());
+
+    document.getElementById('stat-total').textContent = total || 0;
+    document.getElementById('stat-today').textContent = todayCount || 0;
+    document.getElementById('stat-month').textContent = monthCount || 0;
+    document.getElementById('stat-errors').textContent = errCount || 0;
+
+    await loadWeekChart();
+    await loadAnalyses();
+  } catch(e) { showMockData(); }
+}
+
+function showMockData() {
+  document.getElementById('stat-total').textContent = '—';
+  document.getElementById('stat-today').textContent = '—';
+  document.getElementById('stat-month').textContent = '—';
+  document.getElementById('stat-errors').textContent = '—';
+  document.getElementById('stat-today-change').textContent = 'Configurez Supabase';
+  document.getElementById('bar-chart').innerHTML = '<div class="loading">Connectez Supabase pour voir les données</div>';
+  document.getElementById('recent-table').innerHTML = '<div class="loading">Aucune donnée — configurez SUPABASE_URL et SUPABASE_KEY dans le fichier admin.html</div>';
+}
+
+async function loadWeekChart() {
+  const chart = document.getElementById('bar-chart');
+  const days = [];
+  const labels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const counts = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+    const end = new Date(d); end.setHours(23,59,59,999);
+    const { count } = await supabase.from('analyses').select('*', { count: 'exact', head: true }).gte('created_at', d.toISOString()).lte('created_at', end.toISOString());
+    counts.push(count || 0);
+    days.push(labels[d.getDay() === 0 ? 6 : d.getDay() - 1]);
+  }
+  const max = Math.max(...counts, 1);
+  chart.innerHTML = counts.map((c, i) => `
+    <div class="bar-wrap">
+      <div class="bar-val">${c}</div>
+      <div class="bar" style="height:${Math.max((c/max)*100, 4)}px;"></div>
+      <div class="bar-label">${days[i]}</div>
+    </div>
+  `).join('');
+}
+
+async function loadAnalyses() {
+  if (!supabase) return;
+  const { data } = await supabase.from('analyses').select('*').order('created_at', { ascending: false }).limit(10);
+  renderAnalysesTable(data || [], 'recent-table');
+}
+
+async function loadAllAnalyses() {
+  if (!supabase) return;
+  document.getElementById('all-analyses-table').innerHTML = '<div class="loading"><span class="spinner"></span>Chargement...</div>';
+  const { data } = await supabase.from('analyses').select('*').order('created_at', { ascending: false }).limit(100);
+  renderAnalysesTable(data || [], 'all-analyses-table');
+}
+
+function renderAnalysesTable(data, containerId) {
+  if (!data.length) { document.getElementById(containerId).innerHTML = '<div class="loading">Aucune analyse enregistrée</div>'; return; }
+  const rows = data.map(a => `
+    <tr>
+      <td style="color:var(--m)">${new Date(a.created_at).toLocaleDateString('fr-FR')}</td>
+      <td style="font-weight:600">${a.vehicule || '—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--m)">${a.symptomes || '—'}</td>
+      <td style="font-weight:700">${a.montant ? a.montant + ' €' : '—'}</td>
+      <td>${a.score === 'ok' ? '<span class="badge badge-ok">✓ Correct</span>' : a.score === 'warn' ? '<span class="badge badge-warn">⚠ Attention</span>' : '<span class="badge badge-danger">✕ Excessif</span>'}</td>
+    </tr>
+  `).join('');
+  document.getElementById(containerId).innerHTML = `<table><thead><tr><th>Date</th><th>Véhicule</th><th>Symptômes</th><th>Montant</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function loadErrors() {
+  if (!supabase) { document.getElementById('errors-table').innerHTML = '<div class="loading">Configurez Supabase</div>'; return; }
+  document.getElementById('errors-table').innerHTML = '<div class="loading"><span class="spinner"></span>Chargement...</div>';
+  const { data } = await supabase.from('errors').select('*').order('created_at', { ascending: false }).limit(50);
+  if (!data || !data.length) { document.getElementById('errors-table').innerHTML = '<div class="loading">✓ Aucune erreur remontée</div>'; return; }
+  const rows = data.map(e => `
+    <tr>
+      <td style="color:var(--m)">${new Date(e.created_at).toLocaleDateString('fr-FR')}</td>
+      <td style="color:var(--r);font-weight:600">${e.message || '—'}</td>
+      <td style="color:var(--m)">${e.context || '—'}</td>
+    </tr>
+  `).join('');
+  document.getElementById('errors-table').innerHTML = `<table><thead><tr><th>Date</th><th>Erreur</th><th>Contexte</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function saveConfig(key, value) {
+  showToast('Configuration sauvegardée !');
+}
+
+function sendNotification() {
+  const title = document.getElementById('notif-title').value.trim();
+  const body = document.getElementById('notif-body').value.trim();
+  const target = document.getElementById('notif-target').value;
+  if (!title || !body) { showToast('Remplissez le titre et le message', 'error'); return; }
+  const entry = { title, body, target, date: new Date().toLocaleString('fr-FR') };
+  notifHistory.unshift(entry);
+  localStorage.setItem('notif_history', JSON.stringify(notifHistory.slice(0, 50)));
+  document.getElementById('notif-title').value = '';
+  document.getElementById('notif-body').value = '';
+  renderNotifHistory();
+  showToast('Notification enregistrée ! (Intégrez Firebase pour l\'envoi réel)');
+}
+
+function renderNotifHistory() {
+  const el = document.getElementById('notif-history');
+  if (!notifHistory.length) { el.innerHTML = '<div class="loading">Aucune notification envoyée</div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Date</th><th>Titre</th><th>Message</th><th>Cible</th></tr></thead><tbody>
+    ${notifHistory.map(n => `<tr>
+      <td style="color:var(--m);white-space:nowrap">${n.date}</td>
+      <td style="font-weight:600">${n.title}</td>
+      <td style="color:var(--m)">${n.body}</td>
+      <td><span class="badge badge-blue">${n.target === 'all' ? 'Tous' : n.target === 'premium' ? 'Premium' : 'Gratuit'}</span></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+</script>
+</body>
+</html>
