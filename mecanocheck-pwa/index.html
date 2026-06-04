@@ -812,7 +812,7 @@ let currentMode='conducteur',currentTab='accueil',currentResult=null,currentEntr
 let chatHistory=[],isRecording=false,recognition=null,isSpeaking=false;
 let devisCount=1,leafletMap=null,leafletMarkers=[],currentFiltre='car_repair',deferredPrompt=null;
 
-const MODELS={"Renault":["Clio 2 1.2 60ch","Clio 2 1.4 75ch","Clio 2 1.5 dCi 65ch","Clio 2 1.5 dCi 80ch","Clio 3 1.2 75ch","Clio 3 1.2 TCe 100ch","Clio 3 1.5 dCi 85ch","Clio 3 1.5 dCi 105ch","Clio 4 0.9 TCe 90ch","Clio 4 1.2 TCe 120ch","Clio 4 1.5 dCi 75ch","Clio 4 1.5 dCi 90ch","Clio 4 1.6 RS 200ch","Clio 5 1.0 TCe 90ch","Clio 5 1.0 TCe 100ch","Clio 5 1.3 TCe 130ch","Clio 5 E-Tech 140ch","Mégane 2 1.6 115ch","Mégane 2 1.5 dCi 100ch","Mégane 2 1.9 dCi 120ch","Mégane 3 1.2 TCe 115ch","Mégane 3 1.5 dCi 85ch","Mégane 3 1.5 dCi 110ch","Mégane 3 2.0 TCe 265ch RS","Mégane 4 1.3 TCe 115ch","Mégane 4 1.3 TCe 140ch","Mégane 4 1.5 dCi 90ch","Mégane 4 1.5 dCi 110ch","Laguna 2 2.0 135ch","Laguna 2 1.9 dCi 120ch","Laguna 3 2.0 140ch","Laguna 3 1.5 dCi 110ch","Scénic 2 1.6 115ch","Scénic 2 1.5 dCi 100ch","Scénic 3 1.4 TCe 130ch","Scénic 3 1.5 dCi 110ch","Scénic 4 1.3 TCe 140ch","Captur 1 0.9 TCe 90ch","Captur 1 1.2 TCe 120ch","Captur 1 1.5 dCi 90ch","Captur 2 1.0 TCe 100ch","Captur 2 1.3 TCe 130ch","Captur 2 E-Tech 145ch","Kadjar 1.3 TCe 140ch","Kadjar 1.5 dCi 110ch","Kangoo 2 1.5 dCi 90ch","Kangoo 3 1.3 TCe 100ch","Twingo 3 0.9 TCe 90ch","Zoe R110","Zoe R135 ZE50","Logan 2 0.9 TCe 90ch","Logan 2 1.5 dCi 90ch","Sandero 2 0.9 TCe 90ch","Sandero 3 1.0 TCe 100ch","Talisman 1.3 TCe 140ch","Austral E-Tech 200ch","Arkana E-Tech 145ch"],"Peugeot":["206 1.4 75ch","206 2.0 HDi 90ch","207 1.6 VTi 120ch","207 1.6 HDi 90ch","207 1.6 HDi 110ch","208 1 1.2 VTi 82ch","208 1 1.6 HDi 92ch","208 2 1.2 PureTech 75ch","208 2 1.2 PureTech 100ch","208 2 1.2 PureTech 130ch","208 2 1.5 BlueHDi 100ch","208 2 e-208 136ch","308 1 1.6 VTi 120ch","308 1 1.6 HDi 90ch","308 1 1.6 HDi 110ch","308 2 1.2 PureTech 110ch","308 2 1.2 PureTech 130ch","308 2 1.5 BlueHDi 100ch","308 3 1.2 PureTech 130ch","308 3 1.5 BlueHDi 130ch","308 3 e-308 156ch","508 2 1.5 PureTech 180ch","508 2 1.5 BlueHDi 130ch","2008 2 1.2 PureTech 100ch","2008 2 1.2 PureTech 130ch","2008 2 e-2008 136ch","3008 2 1.2 PureTech 130ch","3008 2 1.5 BlueHDi 130ch","3008 2 Hybrid 225ch","5008 2 1.2 PureTech 130ch","5008 2 1.5 BlueHDi 130ch","Rifter 1.2 PureTech 110ch","Rifter 1.5 BlueHDi 100ch"],"Citroën":["C1 2 1.0 VTi 68ch","C3 3 1.2 PureTech 83ch","C3 3 1.2 PureTech 110ch","C3 3 1.5 BlueHDi 100ch","C3 Aircross 1.2 PureTech 110ch","C3 Aircross 1.5 BlueHDi 100ch","C4 2 1.2 PureTech 130ch","C4 2 1.5 BlueHDi 100ch","C4 Picasso 1.2 PureTech 130ch","C4 Cactus 1.2 PureTech 110ch","C5 Aircross 1.2 PureTech 130ch","C5 Aircross 1.5 BlueHDi 130ch","C5 Aircross Hybrid 225ch","Berlingo 3 1.2 PureTech 110ch","ë-C3 136ch","ë-C4 136ch"],"Volkswagen":["Golf 5 1.4 TSI 122ch","Golf 5 2.0 GTI 200ch","Golf 5 1.9 TDI 105ch","Golf 6 1.4 TSI 122ch","Golf 6 2.0 GTI 210ch","Golf 6 1.6 TDI 105ch","Golf 7 1.4 TSI 125ch","Golf 7 1.4 TSI 150ch","Golf 7 2.0 GTI 230ch","Golf 7 1.6 TDI 105ch","Golf 7 2.0 TDI 150ch","Golf 8 1.5 TSI 130ch","Golf 8 2.0 GTI 245ch","Golf 8 2.0 TDI 150ch","Golf 8 GTE 245ch","Polo 6 1.0 TSI 95ch","Polo 6 1.0 TSI 115ch","Polo 6 2.0 GTI 200ch","Passat B8 1.4 TSI 125ch","Passat B8 2.0 TDI 150ch","Tiguan 2 1.5 TSI 150ch","Tiguan 2 2.0 TDI 150ch","T-Roc 1.0 TSI 115ch","T-Roc 1.5 TSI 150ch","ID.3 58 kWh 150ch","ID.4 77 kWh 204ch"],"Ford":["Fiesta 7 1.0 EcoBoost 95ch","Fiesta 7 1.0 EcoBoost 125ch","Fiesta 7 ST 200ch","Focus 3 1.0 EcoBoost 125ch","Focus 3 ST 250ch","Focus 4 1.0 EcoBoost 100ch","Focus 4 1.5 EcoBoost 150ch","Puma 1.0 EcoBoost 125ch","Puma ST 200ch","Kuga 2 1.5 EcoBoost 150ch","Kuga 2 2.0 TDCi 150ch"],"Toyota":["Yaris 3 Hybrid 100ch","Yaris 4 1.5 Hybrid 116ch","Auris 2 Hybrid 136ch","Corolla E210 1.8 Hybrid 122ch","Corolla E210 2.0 Hybrid 184ch","RAV4 4 2.5 Hybrid 197ch","RAV4 5 2.5 Hybrid 218ch","C-HR 1.8 Hybrid 122ch","C-HR 2.0 Hybrid 184ch","Prius 4 1.8 Hybrid 122ch","Aygo 2 1.0 VVT-i 72ch"],"BMW":["Série 1 F40 118i 140ch","Série 1 F40 120i 178ch","Série 1 F40 M135i 306ch","Série 3 F30 320i 184ch","Série 3 F30 320d 184ch","Série 3 G20 320i 184ch","Série 3 G20 330i 258ch","Série 3 G20 320d 190ch","Série 5 G30 520i 184ch","Série 5 G30 530d 286ch","X1 F48 20i 192ch","X3 G01 20i 184ch","X3 G01 20d 190ch","i3 94Ah 170ch"],"Mercedes-Benz":["Classe A W177 180 136ch","Classe A W177 200 163ch","Classe A W177 180 d 116ch","Classe B W246 180 122ch","Classe C W205 180 156ch","Classe C W205 200 184ch","Classe C W205 220 d 170ch","Classe E W213 200 184ch","Classe E W213 220 d 194ch","GLA 180 122ch","GLA 200 d 136ch","GLC 200 184ch","GLC 220 d 194ch","CLA 180 122ch","EQA 250 190ch"],"Opel":["Corsa F 1.2 75ch","Corsa F 1.2 Turbo 100ch","Corsa F 1.2 Turbo 130ch","Astra K 1.0 Turbo 105ch","Astra K 1.4 Turbo 125ch","Mokka B 1.2 Turbo 100ch","Mokka B 1.2 Turbo 130ch","Grandland 1.2 Turbo 130ch","Grandland Hybrid 225ch","Crossland 1.2 Turbo 110ch"],"Dacia":["Sandero 3 1.0 TCe 90ch","Sandero 3 1.0 TCe 100ch","Duster 2 1.0 TCe 100ch","Duster 2 1.3 TCe 130ch","Logan 2 0.9 TCe 90ch","Jogger 1.0 TCe 100ch","Spring Electric 65ch"],"Audi":["A1 1.0 TFSI 95ch","A1 1.5 TFSI 150ch","A3 8V 1.4 TFSI 125ch","A3 8V 2.0 TDI 150ch","A3 8Y 1.5 TFSI 150ch","A3 8Y 2.0 TDI 150ch","A4 B9 1.4 TFSI 150ch","A4 B9 2.0 TFSI 190ch","A4 B9 2.0 TDI 150ch","A6 C7 2.0 TDI 177ch","Q3 F3 1.5 TFSI 150ch","Q3 F3 2.0 TDI 150ch","Q5 FY 2.0 TFSI 252ch","Q5 FY 2.0 TDI 190ch"]};
+const MODELS={"Renault":["Clio 2 1.2 60ch","Clio 2 1.4 75ch","Clio 2 1.6 90ch","Clio 2 1.5 dCi 65ch","Clio 2 1.5 dCi 80ch","Clio 3 1.2 75ch","Clio 3 1.2 TCe 100ch","Clio 3 1.4 98ch","Clio 3 1.6 110ch","Clio 3 1.5 dCi 70ch","Clio 3 1.5 dCi 85ch","Clio 3 1.5 dCi 105ch","Clio 4 0.9 TCe 75ch","Clio 4 0.9 TCe 90ch","Clio 4 1.2 TCe 120ch","Clio 4 1.5 dCi 75ch","Clio 4 1.5 dCi 90ch","Clio 4 1.6 RS 200ch","Clio 5 1.0 SCe 65ch","Clio 5 1.0 TCe 90ch","Clio 5 1.0 TCe 100ch","Clio 5 1.3 TCe 130ch","Clio 5 1.5 dCi 85ch","Clio 5 E-Tech 140ch","Mégane 2 1.4 98ch","Mégane 2 1.6 115ch","Mégane 2 2.0 135ch","Mégane 2 1.5 dCi 80ch","Mégane 2 1.5 dCi 100ch","Mégane 2 1.9 dCi 120ch","Mégane 3 1.2 TCe 115ch","Mégane 3 1.4 TCe 130ch","Mégane 3 1.6 110ch","Mégane 3 2.0 TCe 265ch RS","Mégane 3 1.5 dCi 85ch","Mégane 3 1.5 dCi 110ch","Mégane 3 1.9 dCi 130ch","Mégane 4 1.2 TCe 100ch","Mégane 4 1.3 TCe 115ch","Mégane 4 1.3 TCe 140ch","Mégane 4 1.6 TCe 205ch RS","Mégane 4 1.5 dCi 90ch","Mégane 4 1.5 dCi 110ch","Laguna 2 1.6 107ch","Laguna 2 2.0 135ch","Laguna 2 1.9 dCi 120ch","Laguna 3 2.0 140ch","Laguna 3 1.5 dCi 110ch","Laguna 3 2.0 dCi 150ch","Scénic 2 1.6 115ch","Scénic 2 1.5 dCi 100ch","Scénic 3 1.4 TCe 130ch","Scénic 3 1.5 dCi 110ch","Scénic 4 1.2 TCe 115ch","Scénic 4 1.3 TCe 140ch","Scénic 4 1.5 dCi 110ch","Captur 1 0.9 TCe 90ch","Captur 1 1.2 TCe 120ch","Captur 1 1.5 dCi 90ch","Captur 2 1.0 TCe 100ch","Captur 2 1.3 TCe 130ch","Captur 2 E-Tech 145ch","Kadjar 1.2 TCe 130ch","Kadjar 1.3 TCe 140ch","Kadjar 1.5 dCi 110ch","Kangoo 2 1.5 dCi 75ch","Kangoo 2 1.5 dCi 90ch","Kangoo 3 1.3 TCe 100ch","Kangoo 3 1.5 dCi 95ch","Twingo 2 1.2 75ch","Twingo 2 1.2 TCe 100ch","Twingo 3 0.9 TCe 70ch","Twingo 3 0.9 TCe 90ch","Zoe R75","Zoe R110","Zoe R135 ZE50","Logan 2 0.9 TCe 90ch","Logan 2 1.5 dCi 90ch","Sandero 2 0.9 TCe 90ch","Sandero 2 1.5 dCi 90ch","Sandero 3 1.0 TCe 90ch","Sandero 3 1.0 TCe 100ch","Talisman 1.3 TCe 140ch","Talisman 1.5 dCi 110ch","Austral 1.2 TCe 130ch","Austral E-Tech 200ch","Arkana 1.3 TCe 140ch","Arkana E-Tech 145ch"],"Peugeot":["206 1.1 60ch","206 1.4 75ch","206 1.6 110ch","206 1.4 HDi 70ch","206 2.0 HDi 90ch","207 1.4 75ch","207 1.4 VTi 95ch","207 1.6 VTi 120ch","207 1.6 THP 150ch","207 1.4 HDi 70ch","207 1.6 HDi 90ch","207 1.6 HDi 110ch","208 1 1.0 VTi 68ch","208 1 1.2 VTi 82ch","208 1 1.4 VTi 95ch","208 1 1.6 THP 156ch","208 1 1.4 HDi 68ch","208 1 1.6 HDi 92ch","208 2 1.2 PureTech 75ch","208 2 1.2 PureTech 100ch","208 2 1.2 PureTech 130ch","208 2 1.5 BlueHDi 100ch","208 2 e-208 136ch","307 1.4 75ch","307 1.6 110ch","307 2.0 138ch","307 1.6 HDi 90ch","307 2.0 HDi 110ch","308 1 1.4 VTi 95ch","308 1 1.6 VTi 120ch","308 1 1.6 THP 140ch","308 1 1.6 HDi 90ch","308 1 1.6 HDi 110ch","308 2 1.2 PureTech 110ch","308 2 1.2 PureTech 130ch","308 2 1.6 THP 205ch GTi","308 2 1.5 BlueHDi 100ch","308 2 1.5 BlueHDi 130ch","308 3 1.2 PureTech 110ch","308 3 1.2 PureTech 130ch","308 3 1.5 BlueHDi 130ch","308 3 e-308 156ch","508 1 1.6 THP 156ch","508 1 2.0 THP 240ch","508 1 1.6 HDi 112ch","508 1 2.0 HDi 140ch","508 2 1.5 PureTech 180ch","508 2 1.6 PureTech 225ch","508 2 1.5 BlueHDi 130ch","2008 1 1.2 PureTech 82ch","2008 1 1.2 PureTech 110ch","2008 1 1.6 HDi 92ch","2008 2 1.2 PureTech 100ch","2008 2 1.2 PureTech 130ch","2008 2 1.5 BlueHDi 110ch","2008 2 e-2008 136ch","3008 1 1.2 PureTech 130ch","3008 1 1.6 THP 165ch","3008 1 2.0 BlueHDi 150ch","3008 2 1.2 PureTech 130ch","3008 2 1.5 BlueHDi 130ch","3008 2 Hybrid 225ch","5008 1 1.6 THP 156ch","5008 1 2.0 HDi 150ch","5008 2 1.2 PureTech 130ch","5008 2 1.5 BlueHDi 130ch","Rifter 1.2 PureTech 110ch","Rifter 1.5 BlueHDi 100ch"],"Citroën":["C1 1 1.0 68ch","C1 1 1.4 HDi 54ch","C1 2 1.0 VTi 68ch","C1 2 1.2 VTi 82ch","C2 1.1 60ch","C2 1.4 75ch","C2 1.6 110ch","C2 1.4 HDi 70ch","C3 1 1.1 60ch","C3 1 1.4 75ch","C3 1 1.6 110ch","C3 1 1.4 HDi 70ch","C3 2 1.0 68ch","C3 2 1.2 VTi 82ch","C3 2 1.4 VTi 95ch","C3 2 1.4 HDi 70ch","C3 2 1.6 HDi 92ch","C3 3 1.2 PureTech 68ch","C3 3 1.2 PureTech 82ch","C3 3 1.2 PureTech 110ch","C3 3 1.5 BlueHDi 75ch","C3 3 1.5 BlueHDi 100ch","C3 Aircross 1.2 PureTech 110ch","C3 Aircross 1.2 PureTech 130ch","C3 Aircross 1.5 BlueHDi 100ch","C4 1 1.4 75ch","C4 1 1.6 110ch","C4 1 1.6 HDi 92ch","C4 2 1.2 PureTech 130ch","C4 2 1.6 THP 155ch","C4 2 1.5 BlueHDi 100ch","C4 Picasso 1.2 PureTech 130ch","C4 Picasso 1.6 HDi 110ch","C4 Cactus 1.2 PureTech 82ch","C4 Cactus 1.2 PureTech 110ch","C4 Cactus 1.5 BlueHDi 100ch","C5 2 1.6 THP 155ch","C5 2 1.6 HDi 110ch","C5 Aircross 1.2 PureTech 130ch","C5 Aircross 1.5 BlueHDi 130ch","C5 Aircross Hybrid 225ch","Xsara Picasso 1.6 110ch","Xsara Picasso 1.6 HDi 92ch","Berlingo 2 1.6 VTi 95ch","Berlingo 2 1.6 HDi 90ch","Berlingo 3 1.2 PureTech 110ch","Berlingo 3 1.5 BlueHDi 100ch","ë-C3 136ch","ë-C4 136ch"],"Volkswagen":["Golf 4 1.4 75ch","Golf 4 1.6 100ch","Golf 4 1.8 T 150ch","Golf 4 1.9 TDI 90ch","Golf 4 1.9 TDI 115ch","Golf 5 1.4 75ch","Golf 5 1.4 TSI 122ch","Golf 5 2.0 GTI 200ch","Golf 5 1.9 TDI 105ch","Golf 5 2.0 TDI 140ch","Golf 6 1.2 TSI 85ch","Golf 6 1.4 TSI 122ch","Golf 6 2.0 GTI 210ch","Golf 6 1.6 TDI 105ch","Golf 6 2.0 TDI 140ch","Golf 7 1.2 TSI 85ch","Golf 7 1.4 TSI 125ch","Golf 7 1.4 TSI 150ch","Golf 7 2.0 GTI 230ch","Golf 7 1.6 TDI 105ch","Golf 7 2.0 TDI 150ch","Golf 8 1.0 TSI 110ch","Golf 8 1.5 TSI 130ch","Golf 8 2.0 GTI 245ch","Golf 8 2.0 TDI 150ch","Golf 8 GTE 245ch","Polo 4 1.2 64ch","Polo 4 1.4 85ch","Polo 4 1.9 TDI 100ch","Polo 5 1.2 60ch","Polo 5 1.2 TSI 105ch","Polo 5 1.6 TDI 90ch","Polo 6 1.0 MPI 65ch","Polo 6 1.0 TSI 95ch","Polo 6 1.0 TSI 115ch","Polo 6 2.0 GTI 200ch","Polo 6 1.6 TDI 95ch","Passat B6 1.6 102ch","Passat B6 1.8 TSI 160ch","Passat B6 2.0 TDI 140ch","Passat B7 1.4 TSI 122ch","Passat B7 2.0 TDI 140ch","Passat B8 1.4 TSI 125ch","Passat B8 2.0 TSI 220ch","Passat B8 2.0 TDI 150ch","Passat B8 GTE 218ch","Tiguan 1 1.4 TSI 122ch","Tiguan 1 2.0 TDI 140ch","Tiguan 2 1.5 TSI 150ch","Tiguan 2 2.0 TDI 150ch","T-Roc 1.0 TSI 115ch","T-Roc 1.5 TSI 150ch","T-Roc 2.0 TDI 150ch","ID.3 45 kWh 150ch","ID.3 58 kWh 150ch","ID.3 77 kWh 204ch","ID.4 52 kWh 148ch","ID.4 77 kWh 204ch"],"Ford":["Fiesta 5 1.25 82ch","Fiesta 5 1.4 97ch","Fiesta 5 1.4 TDCi 68ch","Fiesta 6 1.25 82ch","Fiesta 6 1.6 120ch","Fiesta 6 ST 182ch","Fiesta 6 1.6 TDCi 95ch","Fiesta 7 1.0 EcoBoost 95ch","Fiesta 7 1.0 EcoBoost 100ch","Fiesta 7 1.0 EcoBoost 125ch","Fiesta 7 ST 200ch","Fiesta 7 1.5 TDCi 85ch","Focus 1 1.4 75ch","Focus 1 1.6 100ch","Focus 1 1.8 TDCi 100ch","Focus 2 1.4 80ch","Focus 2 1.6 100ch","Focus 2 2.0 145ch","Focus 2 ST 225ch","Focus 2 1.6 TDCi 90ch","Focus 2 2.0 TDCi 136ch","Focus 3 1.0 EcoBoost 100ch","Focus 3 1.0 EcoBoost 125ch","Focus 3 ST 250ch","Focus 3 1.5 TDCi 95ch","Focus 3 2.0 TDCi 150ch","Focus 4 1.0 EcoBoost 100ch","Focus 4 1.5 EcoBoost 150ch","Focus 4 ST 280ch","Focus 4 1.5 EcoBlue 120ch","Mondeo 3 1.8 125ch","Mondeo 3 2.0 TDCi 130ch","Mondeo 4 2.0 EcoBoost 203ch","Mondeo 4 2.0 TDCi 140ch","Puma 1.0 EcoBoost 125ch","Puma 1.0 EcoBoost 155ch","Puma ST 200ch","Kuga 1 1.6 EcoBoost 150ch","Kuga 1 2.0 TDCi 140ch","Kuga 2 1.5 EcoBoost 150ch","Kuga 2 2.0 TDCi 150ch","EcoSport 1.0 EcoBoost 125ch","EcoSport 1.5 TDCi 95ch"],"Toyota":["Yaris 2 1.0 VVT-i 69ch","Yaris 2 1.3 VVT-i 87ch","Yaris 2 1.4 D-4D 90ch","Yaris 3 1.0 VVT-i 69ch","Yaris 3 Hybrid 100ch","Yaris 3 1.4 D-4D 90ch","Yaris 4 1.5 Hybrid 116ch","Yaris 4 1.5 VVT-i 125ch","Auris 1 1.4 97ch","Auris 1 1.6 VVT-i 124ch","Auris 2 1.2 T 116ch","Auris 2 Hybrid 136ch","Auris 2 1.4 D-4D 90ch","Corolla E150 1.6 124ch","Corolla E150 2.0 D-4D 126ch","Corolla E210 1.2 T 116ch","Corolla E210 1.8 Hybrid 122ch","Corolla E210 2.0 Hybrid 184ch","Avensis 2 1.8 129ch","Avensis 2 2.0 D-4D 126ch","Avensis 3 2.0 152ch","Avensis 3 2.0 D-4D 124ch","RAV4 3 2.0 VVT-i 158ch","RAV4 3 2.2 D-4D 150ch","RAV4 4 2.5 Hybrid 197ch","RAV4 5 2.0 175ch","RAV4 5 2.5 Hybrid 218ch","RAV4 5 2.5 Plug-in Hybrid 306ch","C-HR 1.2 T 116ch","C-HR 1.8 Hybrid 122ch","C-HR 2.0 Hybrid 184ch","Prius 3 1.8 Hybrid 136ch","Prius 4 1.8 Hybrid 122ch","Aygo 1 1.0 VVT-i 68ch","Aygo 2 1.0 VVT-i 72ch","Land Cruiser 150 2.8 D-4D 204ch"],"BMW":["Série 1 E87 116i 115ch","Série 1 E87 118i 129ch","Série 1 E87 118d 122ch","Série 1 F20 116i 136ch","Série 1 F20 118i 136ch","Série 1 F20 120i 184ch","Série 1 F20 118d 143ch","Série 1 F40 118i 140ch","Série 1 F40 120i 178ch","Série 1 F40 M135i 306ch","Série 3 E46 316i 115ch","Série 3 E46 318i 143ch","Série 3 E46 320i 150ch","Série 3 E46 318d 115ch","Série 3 E46 320d 150ch","Série 3 E90 316i 122ch","Série 3 E90 318i 143ch","Série 3 E90 320i 170ch","Série 3 E90 320d 163ch","Série 3 E90 330d 231ch","Série 3 F30 316i 136ch","Série 3 F30 320i 184ch","Série 3 F30 328i 245ch","Série 3 F30 318d 143ch","Série 3 F30 320d 184ch","Série 3 G20 318i 156ch","Série 3 G20 320i 184ch","Série 3 G20 330i 258ch","Série 3 G20 318d 150ch","Série 3 G20 320d 190ch","Série 5 E60 520i 170ch","Série 5 E60 525i 218ch","Série 5 E60 520d 163ch","Série 5 E60 530d 231ch","Série 5 F10 520i 184ch","Série 5 F10 528i 245ch","Série 5 F10 520d 184ch","Série 5 F10 530d 258ch","Série 5 G30 520i 184ch","Série 5 G30 530i 252ch","Série 5 G30 520d 190ch","Série 5 G30 530d 286ch","X1 F48 18i 140ch","X1 F48 20i 192ch","X1 F48 18d 150ch","X3 F25 20i 184ch","X3 F25 20d 184ch","X3 G01 20i 184ch","X3 G01 30i 252ch","X3 G01 20d 190ch","X5 E70 30i 272ch","X5 E70 30d 235ch","X5 F15 25d 218ch","X5 F15 30d 258ch","i3 94Ah 170ch","i3s 120Ah 184ch"],"Mercedes-Benz":["Classe A W169 150 95ch","Classe A W169 180 116ch","Classe A W176 160 102ch","Classe A W176 180 122ch","Classe A W176 200 156ch","Classe A W176 AMG 45 360ch","Classe A W176 180 CDI 109ch","Classe A W177 180 136ch","Classe A W177 200 163ch","Classe A W177 AMG 45 S 421ch","Classe A W177 180 d 116ch","Classe B W246 180 122ch","Classe B W246 200 156ch","Classe B W246 180 CDI 109ch","Classe C W203 180 122ch","Classe C W203 220 CDI 143ch","Classe C W204 180 156ch","Classe C W204 200 184ch","Classe C W204 AMG 63 457ch","Classe C W204 220 CDI 170ch","Classe C W205 180 156ch","Classe C W205 200 184ch","Classe C W205 AMG 63 476ch","Classe C W205 220 d 170ch","Classe E W211 200 163ch","Classe E W211 220 CDI 150ch","Classe E W212 200 184ch","Classe E W212 220 CDI 170ch","Classe E W213 200 184ch","Classe E W213 220 194ch","Classe E W213 AMG 63 571ch","Classe E W213 220 d 194ch","GLA 180 122ch","GLA 200 156ch","GLA 200 d 136ch","GLC 200 184ch","GLC 220 d 194ch","GLC 300 de 306ch","CLA 180 122ch","CLA 200 156ch","CLA 180 d 116ch","EQA 250 190ch","EQB 250 190ch","EQC 400 408ch"],"Opel":["Corsa C 1.0 65ch","Corsa C 1.2 75ch","Corsa C 1.3 CDTI 70ch","Corsa D 1.0 65ch","Corsa D 1.2 80ch","Corsa D 1.3 CDTI 75ch","Corsa E 1.0 Turbo 90ch","Corsa E 1.0 Turbo 115ch","Corsa E 1.3 CDTI 75ch","Corsa F 1.2 75ch","Corsa F 1.2 Turbo 100ch","Corsa F 1.2 Turbo 130ch","Astra H 1.4 90ch","Astra H 1.6 115ch","Astra H 1.9 CDTI 120ch","Astra J 1.4 Turbo 120ch","Astra J 1.6 115ch","Astra J 2.0 OPC 280ch","Astra J 1.7 CDTI 110ch","Astra K 1.0 Turbo 105ch","Astra K 1.4 Turbo 125ch","Astra K 1.6 CDTI 110ch","Insignia A 1.6 Turbo 180ch","Insignia A 2.0 CDTI 130ch","Insignia B 1.5 Turbo 140ch","Insignia B 2.0 CDTI 170ch","Mokka 1.4 Turbo 140ch","Mokka X 1.4 Turbo 140ch","Mokka B 1.2 Turbo 100ch","Mokka B 1.2 Turbo 130ch","Grandland 1.2 Turbo 130ch","Grandland Hybrid 225ch","Crossland 1.2 Turbo 110ch","Zafira B 1.6 115ch","Zafira B 1.9 CDTI 120ch","Meriva B 1.4 Turbo 120ch"],"Dacia":["Logan 1 1.4 MPI 75ch","Logan 1 1.6 MPI 90ch","Logan 1 1.5 dCi 70ch","Logan 2 0.9 TCe 90ch","Logan 2 1.0 SCe 75ch","Logan 2 1.5 dCi 90ch","Sandero 1 1.2 75ch","Sandero 1 1.5 dCi 70ch","Sandero 2 0.9 TCe 90ch","Sandero 2 1.5 dCi 90ch","Sandero 3 1.0 TCe 90ch","Sandero 3 1.0 TCe 100ch","Duster 1 1.6 105ch","Duster 1 1.5 dCi 85ch","Duster 1 1.5 dCi 110ch","Duster 2 1.0 TCe 100ch","Duster 2 1.3 TCe 130ch","Duster 2 1.5 dCi 115ch","Lodgy 1.5 dCi 90ch","Lodgy 1.5 dCi 110ch","Dokker 1.5 dCi 90ch","Jogger 1.0 TCe 100ch","Jogger Hybrid 140ch","Spring Electric 33ch","Spring Electric 65ch"],"Audi":["A1 1.2 TFSI 86ch","A1 1.4 TFSI 122ch","A1 1.4 TFSI 185ch S1","A1 1.6 TDI 90ch","A1 1.6 TDI 116ch","A3 8L 1.6 102ch","A3 8L 1.8 T 150ch","A3 8L 1.9 TDI 100ch","A3 8P 1.6 102ch","A3 8P 2.0 TFSI 200ch","A3 8P 1.9 TDI 105ch","A3 8P 2.0 TDI 140ch","A3 8V 1.2 TFSI 105ch","A3 8V 1.4 TFSI 125ch","A3 8V 2.0 TFSI 300ch RS3","A3 8V 1.6 TDI 110ch","A3 8V 2.0 TDI 150ch","A3 8Y 1.0 TFSI 110ch","A3 8Y 1.5 TFSI 150ch","A3 8Y 2.0 TFSI 300ch RS3","A3 8Y 2.0 TDI 150ch","A4 B7 1.8 T 163ch","A4 B7 2.0 TFSI 200ch","A4 B7 1.9 TDI 115ch","A4 B7 2.0 TDI 140ch","A4 B8 1.8 TFSI 120ch","A4 B8 2.0 TFSI 211ch","A4 B8 1.6 TDI 102ch","A4 B8 2.0 TDI 143ch","A4 B9 1.4 TFSI 150ch","A4 B9 2.0 TFSI 190ch","A4 B9 2.0 TDI 150ch","A4 B9 2.0 TDI 190ch","A6 C6 2.0 TFSI 170ch","A6 C6 2.4 177ch","A6 C6 2.0 TDI 140ch","A6 C6 2.7 TDI 190ch","A6 C7 2.0 TFSI 180ch","A6 C7 1.8 TFSI 190ch","A6 C7 2.0 TDI 177ch","A6 C7 3.0 TDI 204ch","Q3 8U 1.4 TFSI 125ch","Q3 8U 2.0 TFSI 170ch","Q3 8U 2.0 TDI 140ch","Q3 F3 1.5 TFSI 150ch","Q3 F3 2.0 TFSI 190ch","Q3 F3 2.0 TDI 150ch","Q5 8R 2.0 TFSI 180ch","Q5 8R 2.0 TDI 143ch","Q5 8R 3.0 TDI 240ch","Q5 FY 2.0 TFSI 252ch","Q5 FY 2.0 TDI 190ch","TT 8J 1.8 TFSI 160ch","TT 8J 2.0 TFSI 200ch","TT FV 1.8 TFSI 180ch","TT FV 2.0 TFSI 230ch"]};
 
 // NAVIGATION
 function showTab(tab){
@@ -1239,9 +1239,247 @@ function renderArnaques(){
 }
 
 // JEUNE CONDUCTEUR
+
 function renderJeune(){
-  const S=[{e:'📋',t:'Avant de prendre la route',c:'Vérifiez quotidiennement : niveau huile moteur, pression des pneus (à froid), niveau liquide de refroidissement, fonctionnement des feux.'},{e:'🔧',t:'Entretien régulier',c:'Vidange tous les 15 000 km ou 1 an. Pneus : vérifier l\'usure (indicateur légal à 1,6mm). Freins : grincements = urgence. Courroie de distribution : remplacer aux intervalles constructeur.'},{e:'💰',t:'Comprendre les devis',c:'Un devis doit être gratuit si vous le demandez. Il doit mentionner : numéro SIRET du garage, description des travaux, prix pièces ET main d\'œuvre, TVA. Vous pouvez refuser après devis sans frais (sauf si les travaux ont commencé).'},{e:'⚖️',t:'Vos droits',c:'Garantie légale : 2 ans pour les pièces neuves. Vous pouvez récupérer les pièces remplacées (demandez-le). En cas de litige : contactez la DGCCRF ou un médiateur auto.'},{e:'🛡️',t:'Assurance',c:'Assurance au tiers minimum obligatoire. Tous risques recommandé si votre voiture vaut plus de 5 000€. Vérifiez que votre contrat couvre le conducteur désigné.'},{e:'❄️',t:'Hiver',c:'Pneus hiver obligatoires du 1er nov au 31 mars dans certaines zones. Sinon, chaînes à bord obligatoires. Verglas : distance de freinage x10 par rapport au sec.'}];
-  document.getElementById('jeune-content').innerHTML=S.map(s=>`<div class="card-sm" style="margin-bottom:10px;"><div style="font-size:20px;margin-bottom:6px;">${s.e}</div><div style="font-size:14px;font-weight:700;margin-bottom:6px;">${s.t}</div><div style="font-size:13px;color:var(--m);line-height:1.6;">${s.c}</div></div>`).join('');
+  document.getElementById('jeune-content').innerHTML=`
+  <div style="background:linear-gradient(135deg,#FF6B35,#FF3B5C);border-radius:var(--rad);padding:22px 20px;margin-bottom:0;color:#fff;position:relative;overflow:hidden;">
+    <div style="position:absolute;right:-20px;bottom:-20px;font-size:120px;opacity:0.12;">🚗</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:6px;">Ce qu'on ne t'apprend pas au permis</div>
+    <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:5px;">Jeune Conducteur</div>
+    <div style="font-size:13px;opacity:0.8;">Guide complet, illustré, pour ne rien rater</div>
+  </div>
+  <div style="background:var(--card);margin-bottom:14px;padding:12px 0 8px;">
+    <div style="display:flex;gap:7px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none;">
+      <button class="chip active" onclick="setJeunTab(this,'niveaux')" id="jtab-niveaux">🛢️ Niveaux</button>
+      <button class="chip" onclick="setJeunTab(this,'voyants')" id="jtab-voyants">🚨 Voyants</button>
+      <button class="chip" onclick="setJeunTab(this,'entretien')" id="jtab-entretien">📅 Entretien</button>
+      <button class="chip" onclick="setJeunTab(this,'achat')" id="jtab-achat">🛒 Acheter</button>
+      <button class="chip" onclick="setJeunTab(this,'urgence')" id="jtab-urgence">🆘 Urgences</button>
+    </div>
+  </div>
+  <div id="jcontent-niveaux"><div id="niveaux-content"></div></div>
+  <div id="jcontent-voyants" style="display:none;"><div id="voyants-content"></div></div>
+  <div id="jcontent-entretien" style="display:none;"><div id="entretien-content"></div></div>
+  <div id="jcontent-achat" style="display:none;"><div id="achat-content"></div></div>
+  <div id="jcontent-urgence" style="display:none;"><div id="urgence-content"></div></div>`;
+  initJeune();
+}
+ 
+function setJeunTab(btn,tab){
+  document.querySelectorAll('[id^="jtab-"]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  ['niveaux','voyants','entretien','achat','urgence'].forEach(t=>{const el=document.getElementById('jcontent-'+t);if(el)el.style.display=t===tab?'block':'none';});
+  const renders={niveaux:renderNiveaux,voyants:renderVoyantsJeune,entretien:renderEntretien,achat:renderAchat,urgence:renderUrgence};
+  if(renders[tab])renders[tab]();
+}
+ 
+const NIVEAUX_DATA=[
+  {nom:'Huile moteur',freq:'Tous les 1 000 km',couleur:'#FF6B35',urgence:'CRITIQUE si bas',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#FF6B3520" stroke="#FF6B35" stroke-width="2"/><path d="M20 38 L20 22 Q20 18 24 18 L32 18 L38 24 L38 38 Q38 42 34 42 L24 42 Q20 42 20 38Z" fill="#FF6B35" opacity="0.9"/><ellipse cx="30" cy="20" rx="6" ry="3" fill="#FF9966"/><path d="M38 26 Q44 26 44 32 L44 36 Q44 40 40 40" fill="none" stroke="#FF6B35" stroke-width="2.5" stroke-linecap="round"/><circle cx="40" cy="40" r="3" fill="#FF6B35"/></svg>`,
+    conseil:'Vérifiez à froid, moteur éteint depuis 10 min. Niveau entre MIN et MAX sur la jauge.'},
+  {nom:'Liquide de refroidissement',freq:'Tous les 6 mois',couleur:'#00C8FF',urgence:'URGENT si bas',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#00C8FF20" stroke="#00C8FF" stroke-width="2"/><path d="M30 10 Q38 20 38 30 Q38 42 30 46 Q22 42 22 30 Q22 20 30 10Z" fill="#00C8FF" opacity="0.85"/><path d="M20 26 L14 26 M40 26 L46 26" stroke="#00C8FF" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    conseil:'Réservoir transparent sur le côté du moteur. Niveau entre MIN et MAX, moteur froid.'},
+  {nom:'Liquide de frein',freq:'Tous les 2 ans',couleur:'#FF3B5C',urgence:'DANGER si bas',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#FF3B5C20" stroke="#FF3B5C" stroke-width="2"/><circle cx="30" cy="30" r="14" fill="none" stroke="#FF3B5C" stroke-width="3"/><circle cx="30" cy="30" r="8" fill="#FF3B5C" opacity="0.8"/><path d="M30 16 L30 10 M30 44 L30 50 M16 30 L10 30 M44 30 L50 30" stroke="#FF3B5C" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    conseil:'Petit réservoir carré sur le maître-cylindre. Ne jamais descendre sous MIN — risque de défaillance des freins.'},
+  {nom:'Lave-glace',freq:'Au besoin',couleur:'#3B82F6',urgence:'Sécurité',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#3B82F620" stroke="#3B82F6" stroke-width="2"/><path d="M15 38 Q22 32 30 36 Q38 40 45 34" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/><path d="M22 22 L22 16 M30 20 L30 14 M38 22 L38 16" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/><circle cx="30" cy="12" r="2" fill="#3B82F6"/></svg>`,
+    conseil:'Grand réservoir bleu. Utilisez un produit concentré — évitez l\'eau seule qui gèle en hiver.'},
+  {nom:'Batterie',freq:'Tous les 3-4 ans',couleur:'#FFBB00',urgence:'Surveiller',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#FFBB0020" stroke="#FFBB00" stroke-width="2"/><rect x="14" y="22" width="32" height="20" rx="4" fill="#FFBB00" opacity="0.85"/><rect x="22" y="18" width="6" height="6" rx="2" fill="#FFBB00"/><rect x="32" y="18" width="6" height="6" rx="2" fill="#FFBB00"/><path d="M26 32 L30 26 L30 31 L34 31 L30 37 L30 32 Z" fill="white" opacity="0.9"/></svg>`,
+    conseil:'Vérifiez les bornes — pas de dépôt blanc/bleu. Tension normale : 12,6V. Durée de vie : 4-6 ans.'},
+];
+ 
+const VOYANTS_JEUNE=[
+  {nom:'Pression d\'huile',couleur:'#FF3B5C',urgence:'STOP IMMÉDIAT',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><path d="M10 32 L10 20 Q10 16 14 16 L22 16 L28 22 L28 32 Q28 36 24 36 L14 36 Q10 36 10 32Z" fill="#FF3B5C"/><path d="M28 22 Q34 22 34 28 L34 32 Q34 36 30 36" fill="none" stroke="#FF3B5C" stroke-width="2.5" stroke-linecap="round"/><circle cx="30" cy="36" r="2.5" fill="#FF3B5C"/><path d="M44 32 L48 18 L52 32 M46 27 L50 27" stroke="#FF3B5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
+    msg:'Arrêtez le moteur IMMÉDIATEMENT. Rouler quelques secondes suffit à le détruire.'},
+  {nom:'Température moteur',couleur:'#FF3B5C',urgence:'STOP IMMÉDIAT',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><rect x="26" y="6" width="8" height="18" rx="4" fill="#FF3B5C"/><circle cx="30" cy="30" r="7" fill="#FF3B5C"/><path d="M14 12 L22 12 M14 16 L22 16 M14 20 L22 20" stroke="#FF3B5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+    msg:'Surchauffe. Coupez la clim, arrêtez-vous dès que possible. N\'ouvrez pas le capot tout de suite.'},
+  {nom:'Batterie / Alternateur',couleur:'#FF6B35',urgence:'RAPIDE',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><rect x="10" y="10" width="32" height="20" rx="4" fill="#FF6B35"/><rect x="18" y="6" width="6" height="6" rx="2" fill="#FF6B35"/><rect x="28" y="6" width="6" height="6" rx="2" fill="#FF6B35"/><path d="M22 20 L26 14 L26 19 L30 19 L26 25 L26 20 Z" fill="white" opacity="0.9"/></svg>`,
+    msg:'Problème charge électrique. Allez chez un garagiste rapidement avant panne totale.'},
+  {nom:'Frein à main / Frein',couleur:'#FF6B35',urgence:'VÉRIFIEZ',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><circle cx="30" cy="20" r="14" fill="none" stroke="#FF6B35" stroke-width="3"/><circle cx="30" cy="20" r="8" fill="#FF6B35" opacity="0.8"/><text x="30" y="25" text-anchor="middle" fill="white" font-size="12" font-weight="900" font-family="Inter,sans-serif">!</text></svg>`,
+    msg:'Vérifiez que le frein à main est abaissé. Si oui → niveau liquide de frein insuffisant.'},
+  {nom:'Moteur (Check Engine)',couleur:'#FFBB00',urgence:'BIENTÔT',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><path d="M10 28 L10 20 L16 20 L20 14 L34 14 L34 20 L38 20 L42 24 L42 28 L44 28 L44 32 L40 32 L40 36 L12 36 L12 32 L10 32 Z" fill="#FFBB00" opacity="0.9"/><rect x="14" y="18" width="12" height="10" rx="2" fill="white" opacity="0.2"/></svg>`,
+    msg:'Panne moteur détectée. Roulez jusqu\'au garage. Utilisez un lecteur OBD2 pour lire le code erreur.'},
+  {nom:'ABS',couleur:'#FFBB00',urgence:'CONTRÔLE',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><circle cx="30" cy="20" r="14" fill="none" stroke="#FFBB00" stroke-width="3"/><text x="30" y="26" text-anchor="middle" fill="#FFBB00" font-size="10" font-weight="900" font-family="Inter,sans-serif">ABS</text></svg>`,
+    msg:'Système anti-blocage défaillant. Freinage moins efficace sur route glissante. Garage conseillé.'},
+  {nom:'Pression pneus (TPMS)',couleur:'#FFBB00',urgence:'VÉRIFIEZ',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><ellipse cx="20" cy="28" rx="9" ry="7" fill="none" stroke="#FFBB00" stroke-width="2.5"/><ellipse cx="40" cy="28" rx="9" ry="7" fill="none" stroke="#FFBB00" stroke-width="2.5"/><path d="M20 21 L20 14 L40 14 L40 21" fill="none" stroke="#FFBB00" stroke-width="2.5" stroke-linecap="round"/><text x="30" y="18" text-anchor="middle" fill="#FFBB00" font-size="8" font-weight="900" font-family="Inter,sans-serif">!</text></svg>`,
+    msg:'Un ou plusieurs pneus sous-gonflés. Vérifiez la pression à froid en station service.'},
+  {nom:'Direction assistée',couleur:'#5B5FEF',urgence:'INFO',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><circle cx="30" cy="20" r="13" fill="none" stroke="#5B5FEF" stroke-width="2.5"/><circle cx="30" cy="20" r="4" fill="#5B5FEF"/><path d="M30 7 L30 11 M30 29 L30 33 M17 20 L21 20 M39 20 L43 20" stroke="#5B5FEF" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    msg:'Direction assistée défaillante. Volant plus lourd surtout à basse vitesse. Garage conseillé.'},
+];
+ 
+function renderNiveaux(){
+  document.getElementById('niveaux-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);border-radius:var(--rad);padding:18px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:13px;font-weight:700;opacity:0.6;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">🔧 Sous le capot — vue d'ensemble</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${NIVEAUX_DATA.map(n=>`<div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:50%;background:${n.couleur};flex-shrink:0;"></div><span style="font-size:11px;font-weight:600;opacity:0.9;">${n.nom}</span></div>`).join('')}
+        </div>
+      </div>
+      ${NIVEAUX_DATA.map(n=>`
+        <div style="background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:10px;box-shadow:var(--shadow-sm);border-left:4px solid ${n.couleur};">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+            <div style="background:${n.couleur}15;border-radius:14px;padding:10px;flex-shrink:0;">${n.svg}</div>
+            <div>
+              <div style="font-size:15px;font-weight:800;margin-bottom:3px;">${n.nom}</div>
+              <div style="font-size:11px;font-weight:700;background:${n.couleur}20;color:${n.couleur};padding:3px 9px;border-radius:20px;display:inline-block;">🔄 ${n.freq}</div>
+              <div style="font-size:10px;font-weight:800;background:${n.couleur};color:#fff;padding:2px 8px;border-radius:20px;display:inline-block;margin-left:4px;">${n.urgence}</div>
+            </div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--rads);padding:11px 13px;font-size:13px;color:var(--m);line-height:1.6;font-weight:500;">${n.conseil}</div>
+        </div>`).join('')}
+      <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);border-radius:var(--rad);padding:18px;color:#fff;margin-top:4px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;">📏 Comment lire la jauge d'huile</div>
+        <div style="font-size:13px;line-height:2.2;opacity:0.85;font-weight:500;">① Moteur froid (attendre 30 min)<br>② Retirez la jauge, essuyez avec un chiffon<br>③ Replongez-la complètement<br>④ Retirez et lisez le niveau<br>✅ Entre MIN et MAX = bon niveau</div>
+      </div>
+    </div>`;
+}
+ 
+function renderVoyantsJeune(){
+  document.getElementById('voyants-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);border-radius:var(--rad);padding:16px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;opacity:0.7;">🚗 Tableau de bord simulé</div>
+        <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+          ${VOYANTS_JEUNE.map(v=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">${v.svg}<div style="font-size:9px;font-weight:600;opacity:0.6;text-align:center;max-width:60px;">${v.nom.split(' ')[0]}</div></div>`).join('')}
+        </div>
+      </div>
+      ${VOYANTS_JEUNE.map(v=>`
+        <div style="background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:10px;box-shadow:var(--shadow-sm);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <div style="background:${v.couleur}15;border-radius:12px;padding:8px;flex-shrink:0;">${v.svg}</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:800;margin-bottom:5px;">${v.nom}</div>
+              <span style="font-size:10px;font-weight:800;background:${v.couleur};color:#fff;padding:3px 9px;border-radius:20px;">${v.urgence}</span>
+            </div>
+          </div>
+          <div style="background:${v.couleur}10;border-radius:var(--rads);padding:11px 13px;font-size:13px;color:${v.couleur};line-height:1.5;font-weight:600;border-left:3px solid ${v.couleur};">${v.msg}</div>
+        </div>`).join('')}
+    </div>`;
+}
+ 
+function renderEntretien(){
+  const items=[
+    {km:'Tous les 10 000 km',emoji:'👀',ops:['Contrôle des 5 niveaux','Pression des pneus (à froid)','Vérification des éclairages']},
+    {km:'Tous les 15 000 km ou 1 an',emoji:'🔧',ops:['Vidange huile + filtre à huile','Inspection visuelle des freins']},
+    {km:'Tous les 30 000 km',emoji:'🛠️',ops:['Filtre à air moteur','Filtre d\'habitacle (clim)','Bougies d\'allumage (essence)','Courroie accessoires']},
+    {km:'Tous les 60 000 km',emoji:'⚙️',ops:['Filtre à carburant','Vidange liquide de frein','Contrôle distribution + pompe à eau']},
+    {km:'Tous les 120 000 km',emoji:'🏗️',ops:['Courroie de distribution (CRITIQUE)','Kit embrayage si nécessaire','Amortisseurs à inspecter']},
+  ];
+  document.getElementById('entretien-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#00D68F,#009E78);border-radius:var(--rad);padding:16px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">💡 La règle d'or</div>
+        <div style="font-size:13px;opacity:0.9;line-height:1.5;">Un entretien régulier = moins de pannes, voiture qui garde sa valeur, et sécurité maximale !</div>
+      </div>
+      ${items.map(e=>`
+        <div style="background:var(--card);border-radius:var(--rad);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow-sm);">
+          <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);padding:11px 14px;display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">${e.emoji}</span>
+            <span style="font-size:13px;font-weight:700;color:#fff;">${e.km}</span>
+          </div>
+          <div style="padding:10px 14px;">
+            ${e.ops.map(op=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg);font-size:13px;font-weight:500;"><span style="color:var(--g);font-size:14px;font-weight:800;">✓</span>${op}</div>`).join('')}
+          </div>
+        </div>`).join('')}
+      <div style="font-size:16px;font-weight:800;margin:16px 0 10px;">🛍️ Liste pour mon 1er véhicule</div>
+      ${[
+        {cat:'🛢️ Entretien courant',c:'#FF6B35',items:['Bidon d\'huile moteur (même référence)','Liquide lave-glace concentré 4 saisons','Chiffons microfibre x5']},
+        {cat:'🚨 Sécurité obligatoire',c:'#FF3B5C',items:['Triangle de signalisation (obligatoire)','Gilet jaune réfléchissant (obligatoire)','Câbles de démarrage']},
+        {cat:'🔧 Outils utiles',c:'#00D68F',items:['Gonfleur portable 12V','Kit réparation pneu crevé','Lampe torche + cric']},
+      ].map(cat=>`<div style="background:var(--card);border-radius:var(--rad);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm);"><div style="font-size:13px;font-weight:700;color:${cat.c};margin-bottom:8px;">${cat.cat}</div>${cat.items.map(i=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg);border-radius:var(--radxs);margin-bottom:6px;font-size:13px;font-weight:500;"><span style="color:${cat.c};font-weight:800;">✓</span>${i}</div>`).join('')}</div>`).join('')}
+    </div>`;
+}
+ 
+function renderAchat(){
+  const checklist=[
+    {cat:'👁️ Carrosserie',items:['Pas de bosses ni rayures profondes','Joints de portes/coffre en bon état','Pneus avec profil suffisant (>3mm)','Pas de rouille visible sous la voiture','Vitres sans fissures ni impacts']},
+    {cat:'🔧 Mécanique',items:['Moteur démarre du premier coup','Pas de fumée bleue (huile) ou blanche (eau)','Pas de bruit suspect au ralenti','Boîte de vitesses sans à-coups','Freins efficaces sans bruit métallique']},
+    {cat:'💺 Intérieur',items:['Climatisation froide','Chauffage fonctionnel','Tous les boutons électriques testés','Odeur de brûlé ou d\'humidité ?']},
+  ];
+  const docs=[
+    {emoji:'📄',doc:'Carte grise au nom du vendeur',tip:'Vérifiez que l\'immatriculation correspond'},
+    {emoji:'🔑',doc:'2 clés minimum',tip:'Une seule clé = méfiez-vous'},
+    {emoji:'📋',doc:'Carnet d\'entretien tamponné',tip:'Chaque entretien = tampon garagiste'},
+    {emoji:'✅',doc:'Contrôle technique < 6 mois',tip:'Plus vieux = à la charge du vendeur'},
+    {emoji:'🚫',doc:'Certificat de non-gage',tip:'Gratuit sur histovec.interieur.gouv.fr'},
+  ];
+  document.getElementById('achat-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#0A0E1A,#1E2435);border-radius:var(--rad);padding:20px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:22px;margin-bottom:8px;">🔎</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:6px;">Analysez l'annonce avant d'acheter</div>
+        <div style="font-size:13px;opacity:0.7;line-height:1.5;margin-bottom:14px;">Collez le texte de l'annonce → l'IA détecte les problèmes connus du modèle</div>
+        <button onclick="showTab('annonce')" style="background:var(--g);color:#fff;border:none;border-radius:var(--rads);padding:12px 20px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Analyser une annonce →</button>
+      </div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:12px;">✅ Checklist inspection</div>
+      ${checklist.map(cat=>`
+        <div style="background:var(--card);border-radius:var(--rad);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm);">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px;">${cat.cat}</div>
+          ${cat.items.map(i=>`<label style="display:flex;align-items:center;gap:12px;padding:9px 10px;background:var(--bg);border-radius:var(--rads);margin-bottom:6px;cursor:pointer;"><input type="checkbox" style="width:20px;height:20px;accent-color:var(--g);flex-shrink:0;cursor:pointer;"><span style="font-size:13px;color:var(--m);line-height:1.4;font-weight:500;">${i}</span></label>`).join('')}
+        </div>`).join('')}
+      <div style="font-size:16px;font-weight:800;margin-bottom:12px;margin-top:4px;">📝 Documents obligatoires</div>
+      ${docs.map(d=>`
+        <div style="display:flex;align-items:flex-start;gap:12px;background:var(--card);border-radius:var(--rads);padding:12px;margin-bottom:8px;box-shadow:var(--shadow-sm);">
+          <span style="font-size:22px;flex-shrink:0;">${d.emoji}</span>
+          <div><div style="font-size:14px;font-weight:700;margin-bottom:3px;">${d.doc}</div><div style="font-size:12px;color:var(--m);font-weight:500;">${d.tip}</div></div>
+        </div>`).join('')}
+      <div style="background:linear-gradient(135deg,#EEF0FF,#fff);border-radius:var(--rad);padding:16px;border:1.5px solid #C7C3FF;margin-top:4px;">
+        <div style="font-size:14px;font-weight:700;color:var(--b);margin-bottom:6px;">🔐 Vérifiez sur HistoVec !</div>
+        <div style="font-size:13px;color:var(--m);line-height:1.5;margin-bottom:10px;font-weight:500;">Site officiel du gouvernement — historique complet du véhicule avec la plaque d'immatriculation. Gratuit.</div>
+        <a href="https://histovec.interieur.gouv.fr" target="_blank" style="display:inline-block;background:var(--b);color:#fff;border-radius:var(--radxs);padding:9px 16px;font-size:13px;font-weight:700;text-decoration:none;">Aller sur HistoVec →</a>
+      </div>
+    </div>`;
+}
+ 
+function renderUrgence(){
+  const urgences=[
+    {titre:'Crevaison',steps:['Feux de détresse immédiatement','Ralentissez DOUCEMENT sans freiner brusquement','Garez-vous sur le côté en sécurité','Triangle à 30m (150m autoroute) + gilet AVANT de sortir','Changez la roue ou appelez le 🆘']},
+    {titre:'Surchauffe moteur',steps:['Coupez la climatisation immédiatement','Arrêtez-vous DÈS QUE POSSIBLE','Coupez le moteur — N\'OUVREZ PAS le capot','Attendez 30 min minimum','Appelez un dépanneur']},
+    {titre:'Panne de batterie',steps:['Pas de bruit au démarreur = batterie','Câbles : Rouge+ sur +, Noir- sur masse (pas sur batterie -)','Laissez tourner 10-15 min','Si récurrent → batterie ou alternateur à changer']},
+    {titre:'Accident',steps:['Feux de détresse + triangle + gilet','Appelez le 15 si blessés, 17 si nécessaire','Photographiez AVANT de déplacer les véhicules','Remplissez le constat amiable','Ne reconnaissez pas votre tort']},
+  ];
+  const numeros=[
+    {num:'15',nom:'SAMU — Urgences médicales',emoji:'🏥',c:'#FF3B5C'},
+    {num:'17',nom:'Police — Accident, danger',emoji:'👮',c:'#5B5FEF'},
+    {num:'18',nom:'Pompiers',emoji:'🚒',c:'#FF3B5C'},
+    {num:'112',nom:'Numéro européen universel',emoji:'🆘',c:'#FF6B35'},
+  ];
+  document.getElementById('urgence-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#FF3B5C,#CC1A2A);border-radius:var(--rad);padding:16px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">🚨 En cas d'urgence</div>
+        <div style="font-size:13px;opacity:0.9;">Activez toujours les feux de détresse en premier. C'est le réflexe numéro 1.</div>
+      </div>
+      ${urgences.map(u=>`
+        <div style="background:var(--card);border-radius:var(--rad);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow-sm);">
+          <div style="background:linear-gradient(135deg,#FF3B5C,#CC1A2A);padding:14px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:20px;">🚨</span>
+            <span style="color:#fff;font-weight:700;font-size:14px;">${u.titre}</span>
+          </div>
+          ${u.steps.map((s,i)=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bg);"><div style="width:26px;height:26px;border-radius:50%;background:var(--r);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">${i+1}</div><span style="font-size:13px;color:var(--m);line-height:1.5;padding-top:4px;font-weight:500;">${s}</span></div>`).join('')}
+        </div>`).join('')}
+      <div style="font-size:16px;font-weight:800;margin-bottom:12px;margin-top:4px;">📞 Numéros d'urgence</div>
+      ${numeros.map(n=>`
+        <a href="tel:${n.num}" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border-radius:var(--rads);margin-bottom:8px;text-decoration:none;box-shadow:var(--shadow-sm);border-left:4px solid ${n.c};">
+          <div style="width:44px;height:44px;border-radius:12px;background:${n.c};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${n.emoji}</div>
+          <div style="flex:1;"><div style="font-size:22px;font-weight:900;color:${n.c};letter-spacing:-0.5px;">${n.num}</div><div style="font-size:13px;color:var(--m);font-weight:500;">${n.nom}</div></div>
+          <div style="font-size:20px;">📞</div>
+        </a>`).join('')}
+    </div>`;
+}
+ 
+function initJeune(){renderNiveaux();}
 }
 
 // VOYANTS
