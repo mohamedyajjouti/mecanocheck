@@ -1477,6 +1477,25 @@ function saveWallet(){
   localStorage.setItem('wallet',JSON.stringify(w));
   const btn=document.getElementById('save-btn');btn.textContent='Enregistré ✓';
   setTimeout(()=>btn.textContent='Enregistrer',2000);
+  if(w.ct){programmerNotifCT(w.ct);}
+}
+function programmerNotifCT(dateCT){
+  if(!('Notification' in window))return;
+  Notification.requestPermission().then(perm=>{
+    if(perm!=='granted')return;
+    const ct=new Date(dateCT);
+    const rappel=new Date(ct);rappel.setMonth(rappel.getMonth()-1);
+    const now=new Date();
+    const delay=rappel-now;
+    if(delay>0){
+      localStorage.setItem('ct_rappel',JSON.stringify({date:dateCT,rappel:rappel.toISOString()}));
+      alert('✅ Rappel CT programmé ! Vous serez notifié 1 mois avant le '+ct.toLocaleDateString('fr-FR'));
+    } else if(ct>now){
+      new Notification('🔧 MécanoCheck — CT urgent !',{body:'Votre contrôle technique est prévu le '+ct.toLocaleDateString('fr-FR')+' — prenez RDV !',icon:'/icons/icon-192.png'});
+    } else {
+      alert('⚠️ Votre CT est dépassé ! Prenez rendez-vous dès que possible.');
+    }
+  });
 }
 
 // QR CODE - version fiable API externe
