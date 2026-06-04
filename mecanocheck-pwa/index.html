@@ -150,6 +150,7 @@ textarea{resize:none;line-height:1.5;}
 .dnum{font-size:13px;font-weight:800;color:var(--o);}
 .dremove{background:none;border:none;cursor:pointer;color:var(--r);font-size:18px;padding:4px;}
 .btn-add{width:100%;background:none;border:2px dashed var(--border);border-radius:var(--rads);padding:13px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:var(--o);cursor:pointer;margin-bottom:12px;transition:all 0.15s;}
+.fg-chip{padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;}
 .photobtn{display:flex;align-items:center;gap:10px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--rads);padding:13px 14px;font-size:13px;font-weight:600;color:var(--b);cursor:pointer;width:100%;transition:all 0.15s;}
 .photobtn input{display:none;}
 .photoprev img{width:100%;max-height:160px;object-fit:cover;border-radius:var(--rads);}
@@ -697,10 +698,52 @@ textarea{resize:none;line-height:1.5;}
           <div class="pro-tool-card" onclick="showTab('diag-pro')"><div class="ptc-icon" style="background:var(--bl);">🧠</div><div class="ptc-title">Diagnostic IA</div><div class="ptc-sub">Symptômes → panne</div></div>
           <div class="pro-tool-card" onclick="showTab('obd')"><div class="ptc-icon" style="background:var(--ol);">📟</div><div class="ptc-title">Codes OBD</div><div class="ptc-sub">Décodage erreurs moteur</div></div>
           <div class="pro-tool-card" onclick="showTab('voyants')"><div class="ptc-icon" style="background:var(--yl);">⚠️</div><div class="ptc-title">Voyants tableau</div><div class="ptc-sub">Signification et urgence</div></div>
+          <div class="pro-tool-card" onclick="showTab('fiche-garage')"><div class="ptc-icon" style="background:var(--ol);">🪪</div><div class="ptc-title">Ma fiche garage</div><div class="ptc-sub">Crée ta fiche pub avec l'IA + QR code</div></div>
+  
         </div>
       </div>
     </div>
-
+<!-- FICHE GARAGE -->
+<div class="screen" id="screen-fiche-garage">
+  <div style="padding-top:16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button class="btn-back" onclick="showTab('pro')">← Retour</button><span class="section-title">🪪 Ma fiche garage</span></div>
+    <div id="fg-form">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">🏠 Infos de base</div><input type="text" id="fg-nom" placeholder="Nom du garage"><input type="text" id="fg-adresse" placeholder="Adresse complète (ex: 14 rue de la Paix, 69007 Lyon)"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><input type="text" id="fg-tel" placeholder="Téléphone"><input type="text" id="fg-email" placeholder="Email (optionnel)"></div></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">🕐 Horaires</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><input type="text" id="fg-h-sem" placeholder="Lun–Ven (ex: 8h–18h)"><input type="text" id="fg-h-sam" placeholder="Samedi (ex: 9h–13h)"></div><label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" id="fg-dim"> Ouvert le dimanche</label></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">🌍 Langues parlées</div><div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="fg-chip" data-v="Français" onclick="fgToggle(this)">Français</span><span class="fg-chip" data-v="Arabe" onclick="fgToggle(this)">Arabe</span><span class="fg-chip" data-v="Anglais" onclick="fgToggle(this)">Anglais</span><span class="fg-chip" data-v="Espagnol" onclick="fgToggle(this)">Espagnol</span><span class="fg-chip" data-v="Portugais" onclick="fgToggle(this)">Portugais</span><span class="fg-chip" data-v="Turc" onclick="fgToggle(this)">Turc</span></div></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">💶 Tarifs indicatifs</div><div id="fg-tarifs"><div class="fg-tarif-row" style="display:grid;grid-template-columns:1fr auto;gap:8px;"><input type="text" placeholder="Ex: Vidange"><input type="text" placeholder="29€" style="width:70px;"></div></div><button class="btn-add" onclick="fgAjouterTarif()">+ Ajouter un tarif</button></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">✍️ Description & spécialités</div><textarea id="fg-desc" rows="4" placeholder="Ex: Garage familial depuis 10 ans, tarifs honnêtes, devis gratuit..." style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;resize:vertical;"></textarea><div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="fg-chip" data-v="Vidange" onclick="fgToggle(this)">Vidange</span><span class="fg-chip" data-v="Freins" onclick="fgToggle(this)">Freins</span><span class="fg-chip" data-v="Pneus" onclick="fgToggle(this)">Pneus</span><span class="fg-chip" data-v="Climatisation" onclick="fgToggle(this)">Climatisation</span><span class="fg-chip" data-v="Carrosserie" onclick="fgToggle(this)">Carrosserie</span><span class="fg-chip" data-v="Diagnostic" onclick="fgToggle(this)">Diagnostic</span><span class="fg-chip" data-v="Révision" onclick="fgToggle(this)">Révision</span><span class="fg-chip" data-v="Électricité" onclick="fgToggle(this)">Électricité</span></div><input type="text" id="fg-delai" placeholder="Délai moyen (ex: le jour même, sous 24h...)"></div>
+      <button class="btn btn-pro" onclick="fgGenerer()" style="width:100%;margin-bottom:16px;">✨ Générer ma fiche avec l'IA</button>
+    </div>
+    <div id="fg-loading" style="display:none;text-align:center;padding:40px 0;"><div style="font-size:32px;animation:spin 1s linear infinite;">⚙️</div><p style="color:var(--muted);margin-top:12px;">L'IA génère ta fiche...</p></div>
+    <div id="fg-result" style="display:none;">
+      <button class="btn-back" onclick="document.getElementById('fg-result').style.display='none';document.getElementById('fg-form').style.display='block';" style="margin-bottom:12px;">← Modifier</button>
+      <div class="card" style="overflow:hidden;padding:0;">
+        <div style="background:linear-gradient(135deg,#ff6b35,#f7931e);padding:20px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;"><div id="fg-avatar" style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:700;">G</div><div><div id="fg-card-nom" style="font-size:18px;font-weight:700;color:#fff;"></div><div id="fg-card-adresse" style="font-size:12px;color:rgba(255,255,255,0.85);"></div></div></div>
+          <div id="fg-card-accroche" style="font-size:13px;color:rgba(255,255,255,0.92);font-style:italic;line-height:1.5;"></div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div id="fg-card-points" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <div id="fg-card-tags" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          <div id="fg-card-tarifs" style="background:var(--bg);border-radius:8px;padding:10px;"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">TARIFS INDICATIFS</div><div id="fg-card-tarifs-list"></div></div>
+          <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);">
+            <div>🕐 <span id="fg-card-horaires"></span></div>
+            <div>📞 <span id="fg-card-tel"></span></div>
+            <div id="fg-card-email-row" style="display:none;">✉️ <span id="fg-card-email"></span></div>
+            <div>🌍 <span id="fg-card-langues"></span></div>
+            <div id="fg-card-delai-row" style="display:none;">⚡ <span id="fg-card-delai"></span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+        <button class="btn btn-pro" onclick="fgQRCode()">🔲 QR Code</button>
+        <button class="btn" onclick="fgPartager()">📤 Partager</button>
+      </div>
+      <div id="fg-qr-container" style="display:none;margin-top:12px;" class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Ton QR code :</div><div id="fg-qr" style="display:flex;justify-content:center;"></div><p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Fais scanner ce QR à tes clients</p></div>
+    </div>
+  </div>
+</div>
     <!-- DEVIS BUILDER -->
     <div class="screen" id="screen-devis-builder">
       <div style="padding-top:16px;">
@@ -818,11 +861,11 @@ const MODELS={"Renault":["Clio 2 1.2 60ch","Clio 2 1.4 75ch","Clio 2 1.6 90ch","
 function showTab(tab){
   currentTab=tab;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const screens={'accueil':'screen-accueil','analyser':'screen-analyser','garages':'screen-garages','monauto':'screen-monauto','profil':'screen-profil','chat':'screen-chat','pieces':'screen-pieces','comparer':'screen-comparer','premium':'screen-premium','arnaques':'screen-arnaques','jeune':'screen-jeune','annonce':'screen-annonce','qrcode':'screen-qrcode','pro':'screen-pro','devis-builder':'screen-devis-builder','diag-pro':'screen-diag-pro','obd':'screen-obd','voyants':'screen-voyants'};
+  const screens={'accueil':'screen-accueil','analyser':'screen-analyser','garages':'screen-garages','monauto':'screen-monauto','profil':'screen-profil','chat':'screen-chat','pieces':'screen-pieces','comparer':'screen-comparer','premium':'screen-premium','arnaques':'screen-arnaques','jeune':'screen-jeune','fiche-garage':'screen-fiche-garage','annonce':'screen-annonce','qrcode':'screen-qrcode','pro':'screen-pro','devis-builder':'screen-devis-builder','diag-pro':'screen-diag-pro','obd':'screen-obd','voyants':'screen-voyants'};
   const el=document.getElementById(screens[tab]||'screen-accueil');
   if(el)el.classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active','active-pro'));
-  const navMap={'accueil':'ni-accueil','analyser':'ni-analyser','garages':'ni-garages','monauto':'ni-monauto','profil':'ni-profil','pro':'ni-pro','devis-builder':'ni-devis-builder','diag-pro':'ni-diag-pro','obd':'ni-obd','voyants':'ni-voyants'};
+  const navMap={'accueil':'ni-accueil','analyser':'ni-analyser','garages':'ni-garages','monauto':'ni-monauto','profil':'ni-profil','pro':'ni-pro','devis-builder':'ni-devis-builder','diag-pro':'ni-diag-pro','obd':'ni-obd','voyants':'ni-voyants','fiche-garage':'ni-pro'};
   const ni=document.getElementById(navMap[tab]);
   if(ni)ni.classList.add(currentMode==='pro'?'active-pro':'active');
   if(tab==='garages')initMapIfNeeded();
@@ -835,7 +878,7 @@ function showTab(tab){
   if(tab==='devis-builder')initDevisBuilder();
   if(tab==='monauto')loadWallet();
   if(tab==='accueil')updateAccueil();
-  if(tab==='pieces')initPieces();
+  if(tab==='pieces')initPieces();if(tab==='fiche-garage')document.getElementById('fg-form').style.display='block';
   document.querySelector('.scroll-area').scrollTop=0;
 }
 
@@ -1497,6 +1540,68 @@ function searchOBD(){renderOBD(document.getElementById('obd-search').value.trim(
 
 // DEVIS BUILDER PRO
 function initDevisBuilder(){document.getElementById('devis-lines').innerHTML='';addDevisLine();updateDevisTotal();}
+function fgToggle(el){const on=el.dataset.active==='1';el.dataset.active=on?'0':'1';el.style.background=on?'var(--card)':'var(--primary)';el.style.color=on?'var(--muted)':'#fff';}
+function fgGetChips(ids){return ids.filter(id=>document.querySelector('.fg-chip[data-v="'+id+'"]')?.dataset.active==='1');}
+function fgAjouterTarif(){const row=document.createElement('div');row.className='fg-tarif-row';row.style.cssText='display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px;';row.innerHTML='<input type="text" placeholder="Prestation"><input type="text" placeholder="Prix" style="width:70px;">';document.getElementById('fg-tarifs').appendChild(row);}
+function fgGetTarifs(){return[...document.querySelectorAll('.fg-tarif-row')].map(r=>{const i=r.querySelectorAll('input');return{label:i[0].value.trim(),prix:i[1].value.trim()};}).filter(t=>t.label);}
+async function fgGenerer(){
+  const nom=document.getElementById('fg-nom').value.trim();
+  const desc=document.getElementById('fg-desc').value.trim();
+  if(!nom||!desc){alert('Remplis le nom et la description !');return;}
+  const adresse=document.getElementById('fg-adresse').value.trim();
+  const tel=document.getElementById('fg-tel').value.trim();
+  const email=document.getElementById('fg-email').value.trim();
+  const hSem=document.getElementById('fg-h-sem').value.trim();
+  const hSam=document.getElementById('fg-h-sam').value.trim();
+  const dim=document.getElementById('fg-dim').checked;
+  const delai=document.getElementById('fg-delai').value.trim();
+  const tags=fgGetChips(['Vidange','Freins','Pneus','Climatisation','Carrosserie','Diagnostic','Révision','Électricité']);
+  const langues=fgGetChips(['Français','Arabe','Anglais','Espagnol','Portugais','Turc']);
+  const tarifs=fgGetTarifs();
+  document.getElementById('fg-form').style.display='none';
+  document.getElementById('fg-loading').style.display='block';
+  const prompt=`Tu es expert en communication pour garages automobiles. Génère une fiche publicitaire pro et accrocheuse.\nInfos: Nom: ${nom} | Adresse: ${adresse||'N/A'} | Description: ${desc} | Spécialités: ${tags.join(',')||'N/A'} | Langues: ${langues.join(',')||'N/A'} | Délai: ${delai||'N/A'} | Tarifs: ${tarifs.map(t=>t.label+':'+t.prix).join(',')||'N/A'}\nRéponds UNIQUEMENT en JSON valide sans markdown: {"accroche":"phrase percutante max 20 mots","points":["point fort 1","point fort 2","point fort 3","point fort 4"]}`;
+  try{
+    const res=await fetch('https://function-bun-production-c4fc.up.railway.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const text=data.content.map(i=>i.text||'').join('');
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    document.getElementById('fg-card-nom').textContent=nom;
+    document.getElementById('fg-avatar').textContent=nom.charAt(0).toUpperCase();
+    document.getElementById('fg-card-adresse').textContent=adresse;
+    document.getElementById('fg-card-accroche').textContent='"'+parsed.accroche+'"';
+    document.getElementById('fg-card-points').innerHTML=parsed.points.map(p=>`<div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#4caf50;">✓</span><span style="font-size:13px;">${p}</span></div>`).join('');
+    document.getElementById('fg-card-tags').innerHTML=tags.map(t=>`<span style="padding:4px 10px;border-radius:20px;font-size:11px;background:var(--primary);color:#fff;">${t}</span>`).join('');
+    const hp=[];if(hSem)hp.push('Lun–Ven: '+hSem);if(hSam)hp.push('Sam: '+hSam);if(dim)hp.push('Dim: ouvert');
+    document.getElementById('fg-card-horaires').textContent=hp.join(' · ')||'Non précisés';
+    document.getElementById('fg-card-tel').textContent=tel||'Non précisé';
+    if(email){document.getElementById('fg-card-email-row').style.display='block';document.getElementById('fg-card-email').textContent=email;}
+    document.getElementById('fg-card-langues').textContent=langues.join(', ')||'Non précisées';
+    if(delai){document.getElementById('fg-card-delai-row').style.display='block';document.getElementById('fg-card-delai').textContent=delai;}
+    if(tarifs.length){document.getElementById('fg-card-tarifs-list').innerHTML=tarifs.map(t=>`<div style="display:flex;justify-content:space-between;font-size:13px;"><span>${t.label}</span><span style="font-weight:600;">${t.prix}</span></div>`).join('');}
+    else{document.getElementById('fg-card-tarifs').style.display='none';}
+    document.getElementById('fg-loading').style.display='none';
+    document.getElementById('fg-result').style.display='block';
+  }catch(e){
+    document.getElementById('fg-loading').style.display='none';
+    document.getElementById('fg-form').style.display='block';
+    alert('Erreur IA. Réessaie !');
+  }
+}
+function fgQRCode(){
+  const nom=document.getElementById('fg-card-nom').textContent;
+  const adresse=document.getElementById('fg-card-adresse').textContent;
+  const url=`https://mecanocheck.vercel.app/garage?nom=${encodeURIComponent(nom)}&adresse=${encodeURIComponent(adresse)}`;
+  document.getElementById('fg-qr').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}" style="width:200px;height:200px;border-radius:8px;">`;
+  document.getElementById('fg-qr-container').style.display='block';
+}
+function fgPartager(){
+  const nom=document.getElementById('fg-card-nom').textContent;
+  const adresse=document.getElementById('fg-card-adresse').textContent;
+  const url=`https://mecanocheck.vercel.app/garage?nom=${encodeURIComponent(nom)}&adresse=${encodeURIComponent(adresse)}`;
+  if(navigator.share){navigator.share({title:nom,text:'Découvre ce garage sur MécanoCheck',url});}
+  else{navigator.clipboard.writeText(url);alert('Lien copié !');}
+}
 function addDevisLine(){const div=document.createElement('div');div.className='devis-line';div.innerHTML=`<input type="text" placeholder="Prestation" class="dl-desc"><input type="number" placeholder="Qté" class="dl-qty" value="1" oninput="updateDevisTotal()"><input type="number" placeholder="Prix HT" class="dl-prix" oninput="updateDevisTotal()"><button class="devis-del" onclick="this.closest('.devis-line').remove();updateDevisTotal()">✕</button>`;document.getElementById('devis-lines').appendChild(div);}
 function updateDevisTotal(){let t=0;document.querySelectorAll('.devis-line').forEach(l=>{t+=(parseFloat(l.querySelector('.dl-qty').value)||0)*(parseFloat(l.querySelector('.dl-prix').value)||0);});document.getElementById('devis-total').textContent=(t*1.2).toFixed(2)+' €';}
 async function genererDevisPDF(){
