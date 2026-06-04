@@ -1356,7 +1356,7 @@ async function lancerRechercheGarages(lat,lon,label){
 // PIECES
 async function rechercherPieces(){
   const piece=document.getElementById('piece-nom').value.trim();
-  const vehicule=document.getElementById('piece-vehicule').value.trim();
+  const vehicule=[document.getElementById('piece-marque').value,document.getElementById('piece-modele').value,document.getElementById('piece-annee').value].filter(Boolean).join(' ');
   if(!piece){alert('Entrez une pièce.');return;}
   const list=document.getElementById('pieces-list');list.innerHTML='<div style="text-align:center;padding:24px;color:var(--m);font-weight:500;">Recherche des prix...</div>';
   try{
