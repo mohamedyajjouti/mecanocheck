@@ -2277,7 +2277,7 @@ function initPiecesScreen(){
 // ===== PIECES - liens corrigés vers la bonne pièce =====
 async function rechercherPieces(){
   const pieceSelect=document.getElementById('piece-nom');
-  const piece=pieceSelect.options[pieceSelect.selectedIndex]?.text||pieceSelect.value||'';
+  let piece=pieceSelect.options[pieceSelect.selectedIndex]?.text||pieceSelect.value||'';if(piece==='Autre (saisie libre)'){const custom=document.getElementById('piece-custom');piece=custom?custom.value.trim():'';}
   const marque=document.getElementById('piece-marque')?.value||'';
   const modele=document.getElementById('piece-modele')?.value||'';
   const annee=document.getElementById('piece-annee')?.value||'';
