@@ -1,0 +1,51 @@
+{
+  "name": "MécanoCheck",
+  "short_name": "MécanoCheck",
+  "description": "Votre garde du corps contre les arnaques garagistes",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0E1A",
+  "theme_color": "#00D68F",
+  "lang": "fr",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["utilities", "automotive"],
+  "shortcuts": [
+    {
+      "name": "Analyser un devis",
+      "short_name": "Analyser",
+      "description": "Vérifier un devis garagiste",
+      "url": "/?action=analyser",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Garages proches",
+      "short_name": "Garages",
+      "description": "Trouver un garage de confiance",
+      "url": "/?action=garages",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
