@@ -1258,7 +1258,7 @@ async function lancerAnalyse(){
     const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
     currentResult=r;currentEntry={id:Date.now().toString(),date:new Date().toLocaleDateString('fr-FR'),vehicule,symptomes,devis,detail:document.getElementById('detail').value,result:r};
     const h=JSON.parse(localStorage.getItem('historique')||'[]');h.unshift(currentEntry);localStorage.setItem('historique',JSON.stringify(h.slice(0,50)));
-    incrementUsage();renderResult(r,vehicule,devis);showScreen('result');
+    incrementUsage();showScreen('result');renderResult(r,vehicule,devis);
   }catch(e){clearInterval(iv);alert('Erreur: '+e.message);showScreen('home');}
 }
 function renderResult(r,vehicule,devis){
