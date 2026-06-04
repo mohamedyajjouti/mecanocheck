@@ -2348,7 +2348,7 @@ async function lancerRechercheGarages(lat,lon,label){
   }
   try{
     const osmTag=FILTRE_OSM[currentFiltre]||'"shop"="car_repair"';
-    const query=`[out:json][timeout:20];(node[${osmTag}](around:5000,${lat},${lon});way[${osmTag}](around:5000,${lat},${lon}););out center 20;`;
+    const query=`[out:json][timeout:30];(node[${osmTag}](around:10000,${lat},${lon});way[${osmTag}](around:10000,${lat},${lon}));out center 30;`
     const oRes=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
     const oData=await oRes.json();
     const elements=oData.elements||[];
