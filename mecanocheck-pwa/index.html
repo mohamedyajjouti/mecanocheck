@@ -2266,11 +2266,11 @@ async function rechercherPieces(){
   // URLs de recherche construites directement — fiables à 100%
   const SITES=[
     {site:'Oscaro',emoji:'🔵',url:`https://www.oscaro.com/fr/search?q=${searchTerm}`},
-    {site:'Mister-Auto',emoji:'🟢',url:`https://www.mister-auto.com/recherche/?q=${searchTerm}`},
+    {site:'Mister-Auto',emoji:'🟢',url:`https://www.mister-auto.com/rechercher/?q=${searchTerm}`},
     {site:'Amazon',emoji:'🟡',url:`https://www.amazon.fr/s?k=${searchTerm}`},
-    {site:'Norauto',emoji:'🔴',url:`https://www.norauto.fr/recherche/?q=${searchTerm}`},
-    {site:'Feu Vert',emoji:'🟠',url:`https://www.feuvert.fr/recherche?q=${searchTerm}`},
-  ];
+    {site:'Norauto',emoji:'🔴',url:`https://www.norauto.fr/rechercher/${searchTerm}`},
+    {site:'Autodoc',emoji:'🟠',url:`https://www.auto-doc.fr/search?keyword=${searchTerm}`},
+    ];
 
   try{
     const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:500,messages:[{role:'user',content:`Expert pièces auto. Donne une fourchette de prix réaliste pour "${piece}" ${vehicule?'pour un '+vehicule:''}. JSON uniquement sans markdown:\n{"pieces":[{"site":"Oscaro","prix_min":45,"prix_max":120,"dispo":"En stock"},{"site":"Mister-Auto","prix_min":38,"prix_max":95,"dispo":"En stock"},{"site":"Amazon","prix_min":55,"prix_max":140,"dispo":"Variable"},{"site":"Norauto","prix_min":70,"prix_max":160,"dispo":"En magasin"},{"site":"Feu Vert","prix_min":60,"prix_max":150,"dispo":"En magasin"}],"conseil":"conseil en 1 phrase"}`}]})});
