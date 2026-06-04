@@ -518,7 +518,7 @@ textarea{resize:none;line-height:1.5;}
       <!-- Actions -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <button onclick="genererPDF()" style="background:var(--t);color:#fff;border:none;border-radius:var(--rads);padding:14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📄 Rapport PDF</button>
-        <button onclick="showTab('pieces')" style="background:var(--bg);color:var(--t);border:none;border-radius:var(--rads);padding:14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🛒 Prix pièces</button>
+        <button onclick="showTab('pieces');prefillPieces()" style="background:var(--bg);color:var(--t);border:none;border-radius:var(--rads);padding:14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🛒 Prix pièces</button>
       </div>
       <button class="btn btn-ghost" onclick="showTab('chat')" style="margin-bottom:16px;">🔧 Demander à Mohamed</button>
     </div>
@@ -1265,6 +1265,7 @@ const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'applicat
     incrementUsage();showScreen('result');setTimeout(()=>renderResult(r,vehicule,devis),50);
   }catch(e){clearInterval(iv);alert('Erreur: '+e.message);showScreen('home');}
 }
+function prefillPieces(){const vehicule=document.getElementById('result-vehicle').textContent;const parts=vehicule.split(' ');const marque=parts[0]||'';const sel=document.getElementById('piece-marque');if(sel){sel.value=marque;const modSel=document.getElementById('piece-modele');if(modSel){modSel.innerHTML='<option value="">Modèle...</option>';(MODELS[marque]||[]).forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;modSel.appendChild(o);});}}const annee=document.getElementById('annee')?.value;if(annee)document.getElementById('piece-annee').value=annee;}
 function renderResult(r,vehicule,devis){
   document.getElementById('result-vehicle').textContent=vehicule;
   const sc=document.getElementById('score-card');
