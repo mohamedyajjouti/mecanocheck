@@ -1241,6 +1241,7 @@ async function scanDevis(input){
     }catch(e){st.textContent='⚠ Remplissez manuellement.';}
   };reader.readAsDataURL(file);
 }
+document.getElementById('piece-nom').addEventListener('change',function(){document.getElementById('piece-custom-wrap').style.display=this.value==='Autre (saisie libre)'?'block':'none';});
 document.getElementById('symptomes').addEventListener('input',function(){this.value=this.value.slice(0,300);document.getElementById('sym-count').textContent=this.value.length+' / 300';});
 
 // ANALYSE
