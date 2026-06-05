@@ -1334,7 +1334,9 @@ function lancerRechercheGarages(lat,lon,label){
   new google.maps.Marker({position:{lat,lng:lon},map,icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#00D68F',fillOpacity:1,strokeColor:'#fff',strokeWeight:2}});
   const service=new google.maps.places.PlacesService(map);
   const types=['car_repair','car_wash','car_dealer'];
-  const request={location:{lat,lng:lon},radius:5000,type:'car_repair',keyword:'garage mécanique'};
+  const keywords={car_repair:'garage mécanique',car_inspection:'contrôle technique',bodyshop:'carrosserie',tyres:'pneus pneumatiques',car:'concessionnaire automobile'};
+const types={car_repair:'car_repair',car_inspection:'car_repair',bodyshop:'car_repair',tyres:'car_repair',car:'car_dealer'};
+const request={location:{lat,lng:lon},radius:5000,type:types[currentFiltre]||'car_repair',keyword:keywords[currentFiltre]||'garage'};
   service.nearbySearch(request,(results,status)=>{
     if(status===google.maps.places.PlacesServiceStatus.OK&&results.length){
       list.innerHTML=results.map(p=>{
