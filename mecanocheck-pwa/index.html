@@ -1302,14 +1302,7 @@ const FILTRE_OSM={'car_repair':'amenity','car_inspection':'amenity','bodyshop':'
 const FILTRE_LABELS={'car_repair':'Mécanique','car_inspection':'CT','bodyshop':'Carrosserie','tyres':'Pneus','car':'Concessionnaire'};
 function setFiltre(btn,filtre){currentFiltre=filtre;document.querySelectorAll('.filtre-chips .chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');}
 function initMapIfNeeded(){}
-  if(!leafletMap){
-    leafletMap=L.map('leaflet-map',{zoomControl:true,attributionControl:false}).setView([46.5,2.3],6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(leafletMap);
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({iconUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',iconRetinaUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',shadowUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'});
-  }
-}
-function clearMapMarkers(){leafletMarkers.forEach(m=>m.remove());leafletMarkers=[];}
+function clearMapMarkers(){}
 async function garagesAutourdeMoi(){
   document.getElementById('garages-list').innerHTML='<div class="card-sm" style="text-align:center;color:var(--m);">📍 Localisation...</div>';
   if(!navigator.geolocation){document.getElementById('garages-list').innerHTML='<div class="card-sm" style="color:var(--r);">Non supporté</div>';return;}
