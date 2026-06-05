@@ -57,8 +57,7 @@
 <meta property="og:description" content="L'IA qui vérifie si votre devis garagiste est honnête">
 <meta property="og:image" content="/icons/icon-512.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCZh6CiBZI7gxAvcBSjnh6YMBYKmsGVjrM&libraries=places"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -1326,30 +1325,31 @@ async function rechercherGarages(){
     await lancerRechercheGarages(parseFloat(geoData[0].lat),parseFloat(geoData[0].lon),geoData[0].display_name.split(',')[0]);
   }catch(e){document.getElementById('garages-list').innerHTML='<div class="card-sm" style="color:var(--r);">Erreur réseau.</div>';}
 }
-async function lancerRechercheGarages(lat,lon,label){
+function lancerRechercheGarages(lat,lon,label){
   const list=document.getElementById('garages-list');
-  list.innerHTML=`<div class="card-sm" style="text-align:center;color:var(--m);">Recherche autour de ${label}...</div>`;
-  initMapIfNeeded();if(leafletMap)leafletMap.setView([lat,lon],14);clearMapMarkers();
-  if(leafletMap){const ui=L.divIcon({className:'',html:`<div style="background:var(--b);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍</div>`,iconSize:[28,28]});L.marker([lat,lon],{icon:ui}).addTo(leafletMap);}
-  try{
-    const osmTag=FILTRE_OSM[currentFiltre]||'amenity';
-    const query=`[out:json][timeout:30];(node[${osmTag}=${currentFiltre}](around:10000,${lat},${lon});way[${osmTag}=${currentFiltre}](around:10000,${lat},${lon}));out center 30;`;
-    const oRes=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
-    const oData=await oRes.json();const elements=oData.elements||[];
-    if(!elements.length){list.innerHTML=`<div class="card-sm" style="color:var(--m);">Aucun résultat. Essayez un autre filtre.</div>`;return;}
-    list.innerHTML=elements.map(g=>{
-      const lt=g.lat||g.center?.lat||lat;const ln=g.lon||g.center?.lon||lon;
-      const name=g.tags?.name||FILTRE_LABELS[currentFiltre];
-      const street=[g.tags?.['addr:housenumber'],g.tags?.['addr:street']].filter(Boolean).join(' ');
-      const city=g.tags?.['addr:city']||g.tags?.['addr:postcode']||'';
-      const addr=[street,city].filter(Boolean).join(', ')||'Adresse non renseignée';
-      const phone=g.tags?.phone||g.tags?.['contact:phone']||'';
-      const dist=Math.round(Math.sqrt(Math.pow((lt-lat)*111000,2)+Math.pow((ln-lon)*111000*Math.cos(lat*Math.PI/180),2)));
-      const mapsUrl=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' '+addr)}`;
-      if(leafletMap){const m=L.marker([lt,ln]).addTo(leafletMap);m.bindPopup(`<div style="font-family:Inter,sans-serif;min-width:180px;"><div style="font-size:13px;font-weight:700;">${name}</div><div style="font-size:12px;color:#666;">${addr}</div></div>`);leafletMarkers.push(m);}
-      return `<div class="gcard"><div class="gname">${name}</div><div class="gdist">${dist<1000?dist+'m':(dist/1000).toFixed(1)+'km'} · ${FILTRE_LABELS[currentFiltre]}</div><div class="gaddr">${addr}</div><div style="display:flex;gap:8px;margin-top:10px;">${phone?`<a href="tel:${phone}" style="flex:1;background:var(--gl);color:var(--gd);border-radius:var(--radxs);padding:8px;text-align:center;font-size:12px;font-weight:700;text-decoration:none;">📞 Appeler</a>`:''}<a href="${mapsUrl}" target="_blank" style="flex:1;background:var(--bl);color:var(--b);border-radius:var(--radxs);padding:8px;text-align:center;font-size:12px;font-weight:700;text-decoration:none;">🗺️ Itinéraire</a></div></div>`;
-    }).join('');
-  }catch(e){list.innerHTML='<div class="card-sm" style="color:var(--r);">Erreur réseau.</div>';}
+  list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--m);font-weight:500;">Recherche garages autour de ${label}...</div>`;
+  const mapDiv=document.getElementById('leaflet-map');
+  mapDiv.innerHTML='';
+  const map=new google.maps.Map(mapDiv,{center:{lat,lng:lon},zoom:14,styles:[{featureType:'poi',stylers:[{visibility:'off'}]}]});
+  new google.maps.Marker({position:{lat,lng:lon},map,icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#00D68F',fillOpacity:1,strokeColor:'#fff',strokeWeight:2}});
+  const service=new google.maps.places.PlacesService(map);
+  const types=['car_repair','car_wash','car_dealer'];
+  const request={location:{lat,lng:lon},radius:5000,type:'car_repair',keyword:'garage mécanique'};
+  service.nearbySearch(request,(results,status)=>{
+    if(status===google.maps.places.PlacesServiceStatus.OK&&results.length){
+      list.innerHTML=results.map(p=>{
+        new google.maps.Marker({position:p.geometry.location,map,title:p.name,icon:{url:'https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/mechanic-71.png',scaledSize:new google.maps.Size(32,32)}});
+        const addr=p.vicinity||'Adresse non renseignée';
+        const rating=p.rating?`⭐ ${p.rating}`:'';
+        const open=p.opening_hours?.open_now===true?'<span style="color:var(--g);font-weight:600;">Ouvert</span>':p.opening_hours?.open_now===false?'<span style="color:var(--r);">Fermé</span>':'';
+        const mapsUrl=`https://www.google.com/maps/place/?q=place_id:${p.place_id}`;
+        return `<div class="gcard"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div class="gname">${p.name}</div><div class="gdist" style="margin-top:2px;">${rating} ${open}</div></div><a href="${mapsUrl}" target="_blank" style="background:var(--g);color:#fff;border:none;border-radius:var(--radxs);padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;flex-shrink:0;">Maps →</a></div><div class="gaddr">📍 ${addr}</div></div>`;
+      }).join('');
+      document.getElementById('map-loading').style.display='none';
+    } else {
+      list.innerHTML='<div style="text-align:center;padding:24px;color:var(--r);">Aucun garage trouvé. Essayez une autre zone.</div>';
+    }
+  });
 }
 
 // ARNAQUES
