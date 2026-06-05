@@ -1301,7 +1301,7 @@ function genererQR(){
 const FILTRE_OSM={'car_repair':'amenity','car_inspection':'amenity','bodyshop':'shop','tyres':'shop','car':'shop'};
 const FILTRE_LABELS={'car_repair':'Mécanique','car_inspection':'CT','bodyshop':'Carrosserie','tyres':'Pneus','car':'Concessionnaire'};
 function setFiltre(btn,filtre){currentFiltre=filtre;document.querySelectorAll('.filtre-chips .chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');}
-function initMapIfNeeded(){
+function initMapIfNeeded(){}
   if(!leafletMap){
     leafletMap=L.map('leaflet-map',{zoomControl:true,attributionControl:false}).setView([46.5,2.3],6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(leafletMap);
@@ -1330,7 +1330,7 @@ function lancerRechercheGarages(lat,lon,label){
   list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--m);font-weight:500;">Recherche garages autour de ${label}...</div>`;
   const mapDiv=document.getElementById('leaflet-map');
   mapDiv.innerHTML='';
-  document.getElementById('map-loading').style.display='none';
+  const mapLoading=document.getElementById('map-loading');if(mapLoading)mapLoading.style.display='none';
   const map=new google.maps.Map(mapDiv,{center:{lat,lng:lon},zoom:14});
   new google.maps.Marker({position:{lat,lng:lon},map,icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#00D68F',fillOpacity:1,strokeColor:'#fff',strokeWeight:2}});
   const service=new google.maps.places.PlacesService(map);
