@@ -1562,7 +1562,7 @@ async function fgGenerer(){
   document.getElementById('fg-loading').style.display='block';
   const prompt=`Tu es expert en communication pour garages automobiles. Génère une fiche publicitaire pro et accrocheuse.\nInfos: Nom: ${nom} | Adresse: ${adresse||'N/A'} | Description: ${desc} | Spécialités: ${tags.join(',')||'N/A'} | Langues: ${langues.join(',')||'N/A'} | Délai: ${delai||'N/A'} | Tarifs: ${tarifs.map(t=>t.label+':'+t.prix).join(',')||'N/A'}\nRéponds UNIQUEMENT en JSON valide sans markdown: {"accroche":"phrase percutante max 20 mots","points":["point fort 1","point fort 2","point fort 3","point fort 4"]}`;
   try{
-    const res=await fetch('https://function-bun-production-c4fc.up.railway.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://function-bun-production-c4fc.up.railway.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     const data=await res.json();
     const text=data.content.map(i=>i.text||'').join('');
     const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
