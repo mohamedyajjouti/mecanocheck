@@ -1540,7 +1540,7 @@ function searchOBD(){renderOBD(document.getElementById('obd-search').value.trim(
 
 // DEVIS BUILDER PRO
 function initDevisBuilder(){document.getElementById('devis-lines').innerHTML='';addDevisLine();updateDevisTotal();}
-function fgToggle(el){const on=el.dataset.active==='1';el.dataset.active=on?'0':'1';el.style.background=on?'var(--card)':'var(--primary)';el.style.color=on?'var(--muted)':'#fff';}
+function fgToggle(el){const on=el.dataset.active==='1';el.dataset.active=on?'0':'1';el.style.background=on?'var(--card)':'var(--primary)';el.style.color=on?'var(--t)':'#fff';}
 function fgGetChips(ids){return ids.filter(id=>document.querySelector('.fg-chip[data-v="'+id+'"]')?.dataset.active==='1');}
 function fgAjouterTarif(){const row=document.createElement('div');row.className='fg-tarif-row';row.style.cssText='display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px;';row.innerHTML='<input type="text" placeholder="Prestation"><input type="text" placeholder="Prix" style="width:70px;">';document.getElementById('fg-tarifs').appendChild(row);}
 function fgGetTarifs(){return[...document.querySelectorAll('.fg-tarif-row')].map(r=>{const i=r.querySelectorAll('input');return{label:i[0].value.trim(),prix:i[1].value.trim()};}).filter(t=>t.label);}
