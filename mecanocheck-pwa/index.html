@@ -694,11 +694,11 @@ textarea{resize:none;line-height:1.5;}
           </div>
         </div>
         <div class="pro-grid">
-          <div class="pro-tool-card" onclick="showTab('devis-builder')"><div class="ptc-icon" style="background:var(--gl);">📄</div><div class="ptc-title">Créer un devis PDF</div><div class="ptc-sub">Devis pro personnalisé</div></div>
-          <div class="pro-tool-card" onclick="showTab('diag-pro')"><div class="ptc-icon" style="background:var(--bl);">🧠</div><div class="ptc-title">Diagnostic IA</div><div class="ptc-sub">Symptômes → panne</div></div>
-          <div class="pro-tool-card" onclick="showTab('obd')"><div class="ptc-icon" style="background:var(--ol);">📟</div><div class="ptc-title">Codes OBD</div><div class="ptc-sub">Décodage erreurs moteur</div></div>
-          <div class="pro-tool-card" onclick="showTab('voyants')"><div class="ptc-icon" style="background:var(--yl);">⚠️</div><div class="ptc-title">Voyants tableau</div><div class="ptc-sub">Signification et urgence</div></div>
-          <div class="pro-tool-card" onclick="showTab('fiche-garage')"><div class="ptc-icon" style="background:var(--ol);">🪪</div><div class="ptc-title">Ma fiche garage</div><div class="ptc-sub">Crée ta fiche pub avec l'IA + QR code</div></div>
+          <div class="pro-tool-card" onclick="showProTab('devis-builder')"><div class="ptc-icon" style="background:var(--gl);">📄</div><div class="ptc-title">Créer un devis PDF</div><div class="ptc-sub">Devis pro personnalisé</div></div>
+          <div class="pro-tool-card" onclick="showProTab('diagnostic')"><div class="ptc-icon" style="background:var(--bl);">🧠</div><div class="ptc-title">Diagnostic IA</div><div class="ptc-sub">Symptômes → panne</div></div>
+          <div class="pro-tool-card" onclick="showProTab('obd2')"><div class="ptc-icon" style="background:var(--ol);">📟</div><div class="ptc-title">Codes OBD</div><div class="ptc-sub">Décodage erreurs moteur</div></div>
+          <div class="pro-tool-card" onclick="showProTab('voyants')"><div class="ptc-icon" style="background:var(--yl);">⚠️</div><div class="ptc-title">Voyants tableau</div><div class="ptc-sub">Signification et urgence</div></div>
+          <div class="pro-tool-card" onclick="showProTab('fiche-garage')"><div class="ptc-icon" style="background:var(--ol);">🪪</div><div class="ptc-title">Ma fiche garage</div><div class="ptc-sub">Crée ta fiche pub avec l'IA + QR code</div></div>
   
         </div>
       </div>
@@ -917,8 +917,8 @@ function switchMode(mode){
   currentMode=mode;
   document.getElementById('mode-conducteur').className='mode-btn'+(mode==='conducteur'?' active':'');
   document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
-  document.getElementById('bnav-conducteur').style.display=mode==='conducteur'?'flex':'none';
-  document.getElementById('bnav-pro').style.display=mode==='pro'?'flex':'none';
+  document.getElementById('user-nav').style.display=mode==='conducteur'?'flex':'none';
+  document.getElementById('pro-nav').style.display=mode==='pro'?'flex':'none';
   if(mode==='pro')showTab('pro');else showTab('accueil');
 }
 
