@@ -915,7 +915,7 @@ function showSubScreen(name){
 
 function switchMode(mode){
   currentMode=mode;
-  document.getElementById('mode-conducteur').className='mode-btn'+(mode==='conducteur'?' active':'');
+  document.getElementById('mode-conducteur').className='mode-btn'+(mode==='user'?' active':'');
   document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
   document.getElementById('user-nav').style.display=mode==='user'?'flex':'none';
   document.getElementById('pro-nav').style.display=mode==='pro'?'flex':'none';
