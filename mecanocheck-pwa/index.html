@@ -915,11 +915,10 @@ function showSubScreen(name){
 
 function switchMode(mode){
   currentMode=mode;
-  document.getElementById('mode-conducteur').className='mode-btn'+(mode==='user'?' active':'');
-  document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
+  document.getElementById('mode-conducteur').className='mode-btn'+(mode==='conducteur'?' active':'');
   document.getElementById('bnav-conducteur').style.display=mode==='conducteur'?'flex':'none';
   document.getElementById('bnav-pro').style.display=mode==='pro'?'flex':'none';
-  if(mode==='pro')showProTab('pro');else showTab('home');
+  if(mode==='pro')showProTab('pro');else showTab('accueil');
 }
 
 function showMonAutoTab(btn,tabId){
