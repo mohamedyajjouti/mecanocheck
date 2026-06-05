@@ -886,7 +886,7 @@ const MODELS={"Renault":["Clio 2 1.2 60ch","Clio 2 1.4 75ch","Clio 2 1.6 90ch","
 function showTab(tab){
   currentTab=tab;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const screens={'accueil':'screen-accueil','analyser':'screen-analyser','garages':'screen-garages','monauto':'screen-monauto','profil':'screen-profil','chat':'screen-chat','pieces':'screen-pieces','comparer':'screen-comparer','premium':'screen-premium','arnaques':'screen-arnaques','jeune':'screen-jeune','fiche-garage':'screen-fiche-garage','annonce':'screen-annonce','qrcode':'screen-qrcode','pro':'screen-pro','devis-builder':'screen-devis-builder','diag-pro':'screen-diag-pro','obd':'screen-obd','voyants':'screen-voyants'};
+  const screens={'accueil':'screen-accueil','analyser':'screen-analyser','garages':'screen-garages','monauto':'screen-monauto','profil':'screen-profil','chat':'screen-chat','pieces':'screen-pieces','comparer':'screen-comparer','pro':'screen-pro','premium':'screen-premium','arnaques':'screen-arnaques','jeune':'screen-jeune','fiche-garage':'screen-fiche-garage','annonce':'screen-annonce','qrcode':'screen-qrcode','pro':'screen-pro','devis-builder':'screen-devis-builder','diag-pro':'screen-diag-pro','obd':'screen-obd','voyants':'screen-voyants'};
   const el=document.getElementById(screens[tab]||'screen-accueil');
   if(el)el.classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active','active-pro'));
