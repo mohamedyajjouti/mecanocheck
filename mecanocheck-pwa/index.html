@@ -930,7 +930,7 @@ function switchMode(mode){
 document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
   document.getElementById('bnav-conducteur').style.display=mode==='conducteur'?'flex':'none';
   document.getElementById('bnav-pro').style.display=mode==='pro'?'flex':'none';
-  if(mode==='pro')showProTab('pro');else showTab('accueil');
+  if(mode==='pro'){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-pro').classList.add('active');}else showTab('accueil');
 }
 
 function showMonAutoTab(btn,tabId){
