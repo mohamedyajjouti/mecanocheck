@@ -1,5 +1,46 @@
 <!DOCTYPE html>
 <html lang="fr">
+  <script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAexcr2UpGHT-HzVpCF0CksWTWMJ5682l0",
+    authDomain: "mecanocheck.firebaseapp.com",
+    projectId: "mecanocheck",
+    storageBucket: "mecanocheck.firebasestorage.app",
+    messagingSenderId: "284992192415",
+    appId: "1:284992192415:web:24cde8b4ea1ad8a57547aa"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Sauvegarder une fiche garage
+  window.saveFicheGarage = async function(ficheData) {
+    const id = Date.now().toString();
+    await setDoc(doc(db, 'garages', id), {
+      ...ficheData,
+      id,
+      createdAt: new Date().toISOString()
+    });
+    return id;
+  };
+
+  // Récupérer une fiche par ID
+  window.getFicheGarage = async function(id) {
+    const snap = await getDoc(doc(db, 'garages', id));
+    return snap.exists() ? snap.data() : null;
+  };
+
+  // Récupérer toutes les fiches
+  window.getAllFiches = async function() {
+    const snap = await getDocs(collection(db, 'garages'));
+    return snap.docs.map(d => d.data());
+  };
+
+  console.log('Firebase initialisé ✅');
+</script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1622,6 +1663,8 @@ async function fgGenerer(){
     if(tarifs.length){document.getElementById('fg-card-tarifs-list').innerHTML=tarifs.map(t=>`<div style="display:flex;justify-content:space-between;font-size:13px;"><span>${t.label}</span><span style="font-weight:600;">${t.prix}</span></div>`).join('');}
     else{document.getElementById('fg-card-tarifs').style.display='none';}
     fgQRCode();
+    const ficheData={nom,adresse,tel,email,hSem,hSam,dim,delai,tags,langues,tarifs,accroche:parsed.accroche,points:parsed.points};
+window.saveFicheGarage&&window.saveFicheGarage(ficheData).then(id=>{const url=`https://mecanocheck.vercel.app?garage=${id}`;document.getElementById('fg-qr').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}&color=d4af37&bgcolor=0f0f0f" style="width:60px;height:60px;">`;localStorage.setItem('fg_garage_id',id);});
     document.getElementById('fg-loading').style.display='none';
     document.getElementById('fg-result').style.display='block';
   }catch(e){
