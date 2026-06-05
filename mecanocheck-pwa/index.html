@@ -831,7 +831,7 @@ textarea{resize:none;line-height:1.5;}
 
   <!-- BOTTOM NAV PRO -->
   <nav class="bnav" id="bnav-pro" style="display:none;">
-    <button class="ni active-pro" id="ni-pro" onclick="showProTab('pro-home')">
+    <button class="ni active-pro" id="ni-pro" onclick="showProTab('pro')">
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Accueil
     </button>
     <button class="ni" id="ni-devis-builder" onclick="showProTab('devis-builder')">
@@ -917,7 +917,7 @@ function switchMode(mode){
   currentMode=mode;
   document.getElementById('mode-conducteur').className='mode-btn'+(mode==='user'?' active':'');
   document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
-  document.getElementById('bnav-conducteur').style.display=mode==='user'?'flex':'none';
+  document.getElementById('bnav-conducteur').style.display=mode==='conducteur'?'flex':'none';
   document.getElementById('bnav-pro').style.display=mode==='pro'?'flex':'none';
   if(mode==='pro')showProTab('pro');else showTab('home');
 }
