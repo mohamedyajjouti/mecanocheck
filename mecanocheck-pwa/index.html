@@ -1357,17 +1357,6 @@ function lancerRechercheGarages(lat,lon,label){
     list.innerHTML='<div style="text-align:center;padding:24px;color:var(--r);">Aucun garage trouvé. Essayez une autre zone.</div>';
   }
 });
-        const addr=p.vicinity||'Adresse non renseignée';
-        const rating=p.rating?`⭐ ${p.rating}`:'';
-        const open=p.opening_hours?.open_now===true?'<span style="color:var(--g);font-weight:600;"> · Ouvert</span>':p.opening_hours?.open_now===false?'<span style="color:var(--r);"> · Fermé</span>':'';
-        const mapsUrl=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name+' '+addr)}&query_place_id=${p.place_id}`;
-        marker.addListener('click',()=>{window.open(mapsUrl,'_blank');});
-        return `<div class="gcard"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div class="gname">${p.name}</div><div class="gdist" style="margin-top:2px;">${rating}${open}</div></div><a href="${mapsUrl}" target="_blank" style="background:var(--g);color:#fff;border:none;border-radius:var(--radxs);padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;flex-shrink:0;">Maps →</a></div><div class="gaddr">📍 ${addr}</div></div>`;
-      }).join('');
-    } else {
-      list.innerHTML='<div style="text-align:center;padding:24px;color:var(--r);">Aucun garage trouvé. Essayez une autre zone.</div>';
-    }
-  });
 }
 // ARNAQUES
 function renderArnaques(){
