@@ -1336,23 +1336,26 @@ function lancerRechercheGarages(lat,lon,label){
   const kwMap={car_repair:'garage mécanique',car_inspection:'contrôle technique CT',bodyshop:'carrosserie',tyres:'pneus',car:'concessionnaire'};
   const tyMap={car_repair:'car_repair',car_inspection:'car_repair',bodyshop:'car_repair',tyres:'car_repair',car:'car_dealer'};
   const request={location:new google.maps.LatLng(lat,lon),radius:5000,type:tyMap[currentFiltre]||'car_repair',keyword:kwMap[currentFiltre]||'garage'};
-  service.nearbySearch(request,(results,status)=>{
-    if(status===google.maps.places.PlacesServiceStatus.OK&&results.length){
-      list.innerHTML=results.map(p=>{
-        window.getAllFiches&&window.getAllFiches().then(fiches=>{
-  const isMecano=fiches.some(f=>f.nom&&p.name&&p.name.toLowerCase().includes(f.nom.toLowerCase()));
-  new google.maps.Marker({
-    position:p.geometry.location,
-    map,
-    title:p.name,
-    icon:isMecano?{
-      url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#FF6B35" stroke="#fff" stroke-width="2"/><text x="20" y="26" text-anchor="middle" font-size="18">🔧</text></svg>'),
-      scaledSize:new google.maps.Size(40,40)
-    }:{
-      url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#5B5FEF" stroke="#fff" stroke-width="2"/><text x="15" y="20" text-anchor="middle" font-size="13">🔧</text></svg>'),
-      scaledSize:new google.maps.Size(30,30)
-    }
-  });
+  service.nearbySearch(request,async(results,status)=>{
+  if(status===google.maps.places.PlacesServiceStatus.OK&&results.length){
+    const fiches=window.getAllFiches?await window.getAllFiches():[];
+    const nomsFiches=fiches.map(f=>(f.nom||'').toLowerCase());
+    list.innerHTML=results.map(p=>{
+      const isMecano=nomsFiches.some(n=>n&&p.name&&p.name.toLowerCase().includes(n));
+      new google.maps.Marker({
+        position:p.geometry.location,map,title:p.name,
+        icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${isMecano?40:30}" height="${isMecano?40:30}" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${isMecano?'#FF6B35':'#5B5FEF'}" stroke="#fff" stroke-width="2"/><text x="20" y="26" text-anchor="middle" font-size="16">🔧</text></svg>`),scaledSize:new google.maps.Size(isMecano?40:30,isMecano?40:30)}
+      });
+      const addr=p.vicinity||'Adresse non renseignée';
+      const rating=p.rating?`⭐ ${p.rating}`:'';
+      const open=p.opening_hours?.open_now===true?'<span style="color:var(--g);font-weight:600;"> · Ouvert</span>':p.opening_hours?.open_now===false?'<span style="color:var(--r);"> · Fermé</span>':'';
+      const mapsUrl=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name+' '+addr)}&query_place_id=${p.place_id}`;
+      return `<div class="gcard">${isMecano?'<div style="font-size:11px;font-weight:700;color:var(--o);margin-bottom:4px;">⭐ Garage MécanoCheck</div>':''}<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div class="gname">${p.name}</div><div class="gdist" style="margin-top:2px;">${rating}${open}</div></div><a href="${mapsUrl}" target="_blank" style="background:var(--g);color:#fff;border:none;border-radius:var(--radxs);padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;flex-shrink:0;">Maps →</a></div><div class="gaddr">📍 ${addr}</div></div>`;
+    }).join('');
+    const mapLoading=document.getElementById('map-loading');if(mapLoading)mapLoading.style.display='none';
+  } else {
+    list.innerHTML='<div style="text-align:center;padding:24px;color:var(--r);">Aucun garage trouvé. Essayez une autre zone.</div>';
+  }
 });
         const addr=p.vicinity||'Adresse non renseignée';
         const rating=p.rating?`⭐ ${p.rating}`:'';
