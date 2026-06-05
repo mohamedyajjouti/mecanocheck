@@ -718,24 +718,49 @@ textarea{resize:none;line-height:1.5;}
     <div id="fg-loading" style="display:none;text-align:center;padding:40px 0;"><div style="font-size:32px;animation:spin 1s linear infinite;">⚙️</div><p style="color:var(--muted);margin-top:12px;">L'IA génère ta fiche...</p></div>
     <div id="fg-result" style="display:none;">
       <button class="btn-back" onclick="document.getElementById('fg-result').style.display='none';document.getElementById('fg-form').style.display='block';" style="margin-bottom:12px;">← Modifier</button>
-      <div class="card" style="overflow:hidden;padding:0;">
-        <div style="background:linear-gradient(135deg,#ff6b35,#f7931e);padding:20px;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;"><div id="fg-avatar" style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:700;">G</div><div><div id="fg-card-nom" style="font-size:18px;font-weight:700;color:#fff;"></div><div id="fg-card-adresse" style="font-size:12px;color:rgba(255,255,255,0.85);"></div></div></div>
-          <div id="fg-card-accroche" style="font-size:13px;color:rgba(255,255,255,0.92);font-style:italic;line-height:1.5;"></div>
-        </div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
-          <div id="fg-card-points" style="display:flex;flex-direction:column;gap:6px;"></div>
-          <div id="fg-card-tags" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-          <div id="fg-card-tarifs" style="background:var(--bg);border-radius:8px;padding:10px;"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;">TARIFS INDICATIFS</div><div id="fg-card-tarifs-list"></div></div>
-          <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);">
-            <div>🕐 <span id="fg-card-horaires"></span></div>
-            <div>📞 <span id="fg-card-tel"></span></div>
-            <div id="fg-card-email-row" style="display:none;">✉️ <span id="fg-card-email"></span></div>
-            <div>🌍 <span id="fg-card-langues"></span></div>
-            <div id="fg-card-delai-row" style="display:none;">⚡ <span id="fg-card-delai"></span></div>
-          </div>
+      <div style="border-radius:20px;overflow:hidden;border:1px solid #d4af37;">
+  <div style="background:#0f0f0f;padding:24px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;border:1px solid rgba(212,175,55,0.15);pointer-events:none;"></div>
+    <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;border:1px solid rgba(212,175,55,0.1);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:10px;right:20px;opacity:0.06;font-size:80px;line-height:1;pointer-events:none;">⚙</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="fg-avatar" style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#f0d060);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#0f0f0f;">G</div>
+        <div>
+          <div id="fg-card-nom" style="font-size:17px;font-weight:500;color:#f5f0e0;line-height:1.2;"></div>
+          <div id="fg-card-adresse" style="font-size:12px;color:#d4af37;margin-top:2px;"></div>
         </div>
       </div>
+      <div style="background:rgba(212,175,55,0.15);border:0.5px solid rgba(212,175,55,0.4);border-radius:8px;padding:4px 8px;text-align:center;">
+        <div style="font-size:9px;color:#d4af37;letter-spacing:0.05em;">VÉRIFIÉ</div>
+        <div style="font-size:9px;color:rgba(212,175,55,0.7);">MécanoCheck</div>
+      </div>
+    </div>
+    <div id="fg-card-accroche" style="font-size:13px;color:rgba(245,240,224,0.8);font-style:italic;line-height:1.6;border-left:2px solid #d4af37;padding-left:12px;margin-bottom:16px;"></div>
+    <div id="fg-card-points" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+  <div id="fg-card-tags" style="background:#161616;padding:12px 24px;display:flex;flex-wrap:wrap;gap:6px;border-top:0.5px solid rgba(212,175,55,0.2);border-bottom:0.5px solid rgba(212,175,55,0.2);"></div>
+  <div id="fg-card-tarifs" style="background:#141414;padding:14px 24px;border-bottom:0.5px solid rgba(212,175,55,0.2);">
+    <div style="font-size:10px;font-weight:500;color:#d4af37;letter-spacing:0.08em;margin-bottom:8px;">TARIFS INDICATIFS</div>
+    <div id="fg-card-tarifs-list"></div>
+  </div>
+  <div style="background:#0f0f0f;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="font-size:12px;color:rgba(245,240,224,0.6);">🕐 <span id="fg-card-horaires"></span></div>
+      <div style="font-size:12px;color:rgba(245,240,224,0.6);">📞 <span id="fg-card-tel"></span></div>
+      <div id="fg-card-email-row" style="display:none;font-size:12px;color:rgba(245,240,224,0.6);">✉️ <span id="fg-card-email"></span></div>
+      <div style="font-size:12px;color:rgba(245,240,224,0.6);">🌍 <span id="fg-card-langues"></span></div>
+      <div id="fg-card-delai-row" style="display:none;font-size:12px;color:rgba(245,240,224,0.6);">⚡ <span id="fg-card-delai"></span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div id="fg-qr" style="width:60px;height:60px;border-radius:6px;overflow:hidden;"></div>
+      <div style="font-size:9px;color:rgba(212,175,55,0.6);">Scanner</div>
+    </div>
+  </div>
+  <div style="background:#0a0a0a;padding:8px 24px;display:flex;justify-content:center;border-top:0.5px solid rgba(212,175,55,0.15);">
+    <div style="font-size:10px;color:rgba(212,175,55,0.4);">⚙ MécanoCheck — Garage certifié</div>
+  </div>
+</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
         <button class="btn btn-pro" onclick="fgQRCode()">🔲 QR Code</button>
         <button class="btn" onclick="fgPartager()">📤 Partager</button>
@@ -1575,8 +1600,8 @@ async function fgGenerer(){
     document.getElementById('fg-avatar').textContent=nom.charAt(0).toUpperCase();
     document.getElementById('fg-card-adresse').textContent=adresse;
     document.getElementById('fg-card-accroche').textContent='"'+parsed.accroche+'"';
-    document.getElementById('fg-card-points').innerHTML=parsed.points.map(p=>`<div style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#4caf50;">✓</span><span style="font-size:13px;">${p}</span></div>`).join('');
-    document.getElementById('fg-card-tags').innerHTML=tags.map(t=>`<span style="padding:4px 10px;border-radius:20px;font-size:11px;background:var(--primary);color:#fff;">${t}</span>`).join('');
+    document.getElementById('fg-card-points').innerHTML=parsed.points.map(p=>`<div style="display:flex;align-items:center;gap:8px;"><span style="color:#d4af37;font-size:14px;">✦</span><span style="font-size:12px;color:rgba(245,240,224,0.85);">${p}</span></div>`).join('');
+    document.getElementById('fg-card-tags').innerHTML=tags.map(t=>`<span style="padding:4px 10px;border-radius:20px;font-size:11px;border:0.5px solid rgba(212,175,55,0.4);color:#d4af37;background:rgba(212,175,55,0.08);">${t}</span>`).join('');
     const hp=[];if(hSem)hp.push('Lun–Ven: '+hSem);if(hSam)hp.push('Sam: '+hSam);if(dim)hp.push('Dim: ouvert');
     document.getElementById('fg-card-horaires').textContent=hp.join(' · ')||'Non précisés';
     document.getElementById('fg-card-tel').textContent=tel||'Non précisé';
@@ -1585,6 +1610,7 @@ async function fgGenerer(){
     if(delai){document.getElementById('fg-card-delai-row').style.display='block';document.getElementById('fg-card-delai').textContent=delai;}
     if(tarifs.length){document.getElementById('fg-card-tarifs-list').innerHTML=tarifs.map(t=>`<div style="display:flex;justify-content:space-between;font-size:13px;"><span>${t.label}</span><span style="font-weight:600;">${t.prix}</span></div>`).join('');}
     else{document.getElementById('fg-card-tarifs').style.display='none';}
+    fgQRCode();
     document.getElementById('fg-loading').style.display='none';
     document.getElementById('fg-result').style.display='block';
   }catch(e){
@@ -1596,9 +1622,9 @@ async function fgGenerer(){
 function fgQRCode(){
   const nom=document.getElementById('fg-card-nom').textContent;
   const adresse=document.getElementById('fg-card-adresse').textContent;
-  const url=`https://mecanocheck.vercel.app/garage?nom=${encodeURIComponent(nom)}&adresse=${encodeURIComponent(adresse)}`;
-  document.getElementById('fg-qr').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}" style="width:200px;height:200px;border-radius:8px;">`;
-  document.getElementById('fg-qr-container').style.display='block';
+  const url=`https://mecanocheck.vercel.app?fiche=${encodeURIComponent(JSON.stringify({nom,adresse}))}`;
+  document.getElementById('fg-qr').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}&color=d4af37&bgcolor=0f0f0f" style="width:60px;height:60px;">`;
+  document.getElementById('fg-qr-container').style.display='none';
 }
 function fgPartager(){
   const nom=document.getElementById('fg-card-nom').textContent;
