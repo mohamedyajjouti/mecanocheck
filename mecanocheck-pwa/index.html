@@ -917,8 +917,8 @@ function switchMode(mode){
   currentMode=mode;
   document.getElementById('mode-conducteur').className='mode-btn'+(mode==='user'?' active':'');
   document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
-  document.getElementById('user-nav').style.display=mode==='user'?'flex':'none';
-  document.getElementById('pro-nav').style.display=mode==='pro'?'flex':'none';
+  document.getElementById('bnav-conducteur').style.display=mode==='user'?'flex':'none';
+  document.getElementById('bnav-pro').style.display=mode==='pro'?'flex':'none';
   if(mode==='pro')showProTab('pro-home');else showTab('home');
 }
 
