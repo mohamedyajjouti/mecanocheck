@@ -919,7 +919,7 @@ function switchMode(mode){
   document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
   document.getElementById('user-nav').style.display=mode==='conducteur'?'flex':'none';
   document.getElementById('pro-nav').style.display=mode==='pro'?'flex':'none';
-  if(mode==='pro')showTab('pro');else showTab('accueil');
+  if(mode==='pro')showProTab('pro-home');else showTab('home');
 }
 
 function showMonAutoTab(btn,tabId){
