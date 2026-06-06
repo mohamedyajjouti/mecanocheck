@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — MécanoCheck</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getFirestore, doc, getDoc, getDocs, updateDoc, collection, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+  const ADMIN_EMAIL = 'mohamedyajjouti@gmail.com';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAexcr2UpGHT-HzVpCF0CksWTWMJ5682l0",
+    authDomain: "mecanocheck.firebaseapp.com",
+    projectId: "mecanocheck",
+    storageBucket: "mecanocheck.firebasestorage.app",
+    messagingSenderId: "284992192415",
+    appId: "1:284992192415:web:24cde8b4ea1ad8a57547aa"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  // Auth state
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.email === ADMIN_EMAIL) {
+      showDashboard(user);
+      chargerDemandes();
+    } else if (user && user.email !== ADMIN_EMAIL) {
+      signOut(auth);
+      showErreur('Accès refusé. Compte non autorisé.');
+    } else {
+      showLogin();
+    }
+  });
+
+  // Login
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pwd = document.getElementById('login-pwd').value;
+    const errEl = document.getElementById('login-err');
+    const btn = document.getElementById('btn-login');
+    errEl.style.display = 'none';
+    btn.textContent = 'Connexion...'; btn.disabled = true;
+    try {
+      await signInWithEmailAndPassword(auth, email, pwd);
+    } catch(e) {
+      btn.textContent = 'Se connecter'; btn.disabled = false;
+      const msgs = {
+        'auth/wrong-password': 'Mot de passe incorrect.',
+        'auth/user-not-found': 'Email introuvable.',
+        'auth/invalid-email': 'Email invalide.',
+        'auth/invalid-credential': 'Identifiants incorrects.'
+      };
+      errEl.textContent = msgs[e.code] || 'Erreur de connexion.';
+      errEl.style.display = 'block';
+    }
+  };
+
+  // Déconnexion
+  window.doLogout = async function() {
+    await signOut(auth);
+  };
+
+  // Charger toutes les demandes
+  async function chargerDemandes() {
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('table-wrap').style.display = 'none';
+    try {
+      const snap = await getDocs(collection(db, 'certifications'));
+      const demandes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      demandes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      afficherDemandes(demandes);
+    } catch(e) {
+      document.getElementById('loading').innerHTML = '<div style="color:#FF3B5C;">Erreur de chargement.</div>';
+    }
+  }
+  window.chargerDemandes = chargerDemandes;
+
+  // Accepter
+  window.accepter = async function(uid, btn) {
+    if (!confirm('Certifier ce garage ?')) return;
+    btn.textContent = '...'; btn.disabled = true;
+    try {
+      // Mettre à jour la certification
+      await updateDoc(doc(db, 'certifications', uid), {
+        statut: 'accepte',
+        traiteLe: new Date().toISOString()
+      });
+      // Mettre à jour le garage
+      await updateDoc(doc(db, 'garages', uid), {
+        certifie: true,
+        certifieLe: new Date().toISOString()
+      });
+      // Mettre à jour la ligne
+      const row = document.getElementById('row-' + uid);
+      row.querySelector('.statut-badge').innerHTML = '<span class="badge badge-ok">✅ Certifié</span>';
+      row.querySelector('.actions-cell').innerHTML = '<span style="color:#00D68F;font-size:13px;font-weight:700;">✓ Traité</span>';
+    } catch(e) {
+      alert('Erreur : ' + e.message);
+      btn.textContent = '✅ Accepter'; btn.disabled = false;
+    }
+  };
+
+  // Refuser
+  window.refuser = async function(uid, btn) {
+    const raison = prompt('Raison du refus (optionnel) :') || '';
+    btn.textContent = '...'; btn.disabled = true;
+    try {
+      await updateDoc(doc(db, 'certifications', uid), {
+        statut: 'refuse',
+        raison,
+        traiteLe: new Date().toISOString()
+      });
+      const row = document.getElementById('row-' + uid);
+      row.querySelector('.statut-badge').innerHTML = '<span class="badge badge-err">❌ Refusé</span>';
+      row.querySelector('.actions-cell').innerHTML = '<span style="color:#FF3B5C;font-size:13px;font-weight:700;">✗ Refusé</span>';
+    } catch(e) {
+      alert('Erreur : ' + e.message);
+      btn.textContent = '❌ Refuser'; btn.disabled = false;
+    }
+  };
+
+  function afficherDemandes(demandes) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('table-wrap').style.display = 'block';
+
+    // Stats
+    const total = demandes.length;
+    const enAttente = demandes.filter(d => d.statut === 'en_attente').length;
+    const acceptes = demandes.filter(d => d.statut === 'accepte').length;
+    const refuses = demandes.filter(d => d.statut === 'refuse').length;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-attente').textContent = enAttente;
+    document.getElementById('stat-ok').textContent = acceptes;
+    document.getElementById('stat-err').textContent = refuses;
+
+    if (demandes.length === 0) {
+      document.getElementById('table-wrap').innerHTML = '<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.4);">Aucune demande pour l\'instant.</div>';
+      return;
+    }
+
+    const rows = demandes.map(d => {
+      const date = d.createdAt ? new Date(d.createdAt).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      let badgeHtml = '';
+      if (d.statut === 'en_attente') badgeHtml = '<span class="badge badge-warn">⏳ En attente</span>';
+      else if (d.statut === 'accepte') badgeHtml = '<span class="badge badge-ok">✅ Certifié</span>';
+      else if (d.statut === 'refuse') badgeHtml = '<span class="badge badge-err">❌ Refusé</span>';
+
+      let actionsHtml = '';
+      if (d.statut === 'en_attente') {
+        actionsHtml = `
+          <button class="btn-accept" onclick="accepter('${d.uid}', this)">✅ Accepter</button>
+          <button class="btn-refuse" onclick="refuser('${d.uid}', this)">❌ Refuser</button>
+        `;
+      } else {
+        actionsHtml = `<span style="color:rgba(255,255,255,0.4);font-size:13px;">Traité</span>`;
+      }
+
+      return `
+        <tr id="row-${d.uid}">
+          <td>
+            <div class="garage-nom">${d.nom || '—'}</div>
+            <div class="garage-adresse">${d.adresse || '—'}</div>
+          </td>
+          <td>
+            <div class="contact-line">📞 ${d.tel || '—'}</div>
+            <div class="contact-line">✉️ ${d.userEmail || d.email || '—'}</div>
+          </td>
+          <td>
+            <a href="https://mecanocheck.vercel.app/garage/${d.garageId}" target="_blank" class="fiche-link">Voir la fiche →</a>
+          </td>
+          <td class="statut-badge">${badgeHtml}</td>
+          <td>${date}</td>
+          <td class="actions-cell">${actionsHtml}</td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('tbody').innerHTML = rows;
+  }
+
+  function showLogin() {
+    document.getElementById('page-login').style.display = 'flex';
+    document.getElementById('page-dashboard').style.display = 'none';
+  }
+  function showDashboard(user) {
+    document.getElementById('page-login').style.display = 'none';
+    document.getElementById('page-dashboard').style.display = 'block';
+    document.getElementById('admin-email').textContent = user.email;
+  }
+  function showErreur(msg) {
+    document.getElementById('page-login').style.display = 'flex';
+    document.getElementById('page-dashboard').style.display = 'none';
+    const err = document.getElementById('login-err');
+    err.textContent = msg;
+    err.style.display = 'block';
+  }
+</script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #0f0f0f; color: #f5f0e0; min-height: 100vh; }
+
+/* LOGIN */
+#page-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.login-card {
+  background: #1a1a1a;
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 380px;
+}
+.login-logo { text-align: center; margin-bottom: 28px; }
+.login-logo div:first-child { font-size: 40px; margin-bottom: 10px; }
+.login-logo div:last-child { font-size: 20px; font-weight: 800; color: #d4af37; }
+.field { margin-bottom: 14px; }
+.lbl { font-size: 11px; font-weight: 700; color: rgba(245,240,224,0.5); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px; }
+input { width: 100%; background: #111; border: 1.5px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; font-family: 'Inter', sans-serif; font-size: 15px; color: #f5f0e0; outline: none; }
+input:focus { border-color: #d4af37; }
+.btn-login-main { width: 100%; background: linear-gradient(135deg, #d4af37, #f0d060); color: #0f0f0f; border: none; border-radius: 10px; padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 6px; }
+.login-err { display: none; color: #FF3B5C; font-size: 13px; font-weight: 600; margin-bottom: 10px; padding: 10px; background: rgba(255,59,92,0.1); border-radius: 8px; }
+
+/* DASHBOARD */
+#page-dashboard { display: none; }
+.topbar {
+  background: #1a1a1a;
+  border-bottom: 1px solid rgba(212,175,55,0.15);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.topbar-brand { font-size: 18px; font-weight: 800; color: #d4af37; }
+.topbar-brand span { color: #f5f0e0; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.admin-badge { font-size: 12px; color: rgba(245,240,224,0.5); }
+.btn-logout { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(245,240,224,0.7); border-radius: 8px; padding: 7px 14px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-logout:hover { background: rgba(255,59,92,0.15); color: #FF3B5C; border-color: rgba(255,59,92,0.3); }
+
+.content { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; }
+.stat-label { font-size: 11px; font-weight: 700; color: rgba(245,240,224,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.stat-value { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+.stat-total .stat-value { color: #f5f0e0; }
+.stat-attente .stat-value { color: #FFBB00; }
+.stat-ok .stat-value { color: #00D68F; }
+.stat-err .stat-value { color: #FF3B5C; }
+
+/* TABLE HEADER */
+.table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.table-title { font-size: 18px; font-weight: 800; }
+.btn-refresh { background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.2); color: #d4af37; border-radius: 8px; padding: 8px 16px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-refresh:hover { background: rgba(212,175,55,0.2); }
+
+/* TABLE */
+.table-wrap { background: #1a1a1a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: rgba(212,175,55,0.05); border-bottom: 1px solid rgba(255,255,255,0.06); }
+th { padding: 14px 18px; text-align: left; font-size: 11px; font-weight: 700; color: rgba(245,240,224,0.4); text-transform: uppercase; letter-spacing: 0.08em; }
+td { padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+.garage-nom { font-size: 14px; font-weight: 700; color: #f5f0e0; margin-bottom: 3px; }
+.garage-adresse { font-size: 12px; color: rgba(245,240,224,0.45); }
+.contact-line { font-size: 12px; color: rgba(245,240,224,0.55); margin-bottom: 2px; }
+.fiche-link { font-size: 12px; color: #d4af37; text-decoration: none; font-weight: 600; }
+.fiche-link:hover { text-decoration: underline; }
+
+/* BADGES */
+.badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-warn { background: rgba(255,187,0,0.15); color: #FFBB00; border: 1px solid rgba(255,187,0,0.3); }
+.badge-ok { background: rgba(0,214,143,0.15); color: #00D68F; border: 1px solid rgba(0,214,143,0.3); }
+.badge-err { background: rgba(255,59,92,0.15); color: #FF3B5C; border: 1px solid rgba(255,59,92,0.3); }
+
+/* ACTION BUTTONS */
+.btn-accept { background: rgba(0,214,143,0.12); border: 1px solid rgba(0,214,143,0.3); color: #00D68F; border-radius: 8px; padding: 7px 12px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; margin-right: 6px; }
+.btn-accept:hover { background: rgba(0,214,143,0.25); }
+.btn-refuse { background: rgba(255,59,92,0.1); border: 1px solid rgba(255,59,92,0.25); color: #FF3B5C; border-radius: 8px; padding: 7px 12px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
+.btn-refuse:hover { background: rgba(255,59,92,0.2); }
+
+/* LOADING */
+#loading { display: flex; align-items: center; justify-content: center; padding: 60px; gap: 12px; }
+.spinner { width: 32px; height: 32px; border: 3px solid rgba(212,175,55,0.2); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-txt { font-size: 14px; color: rgba(245,240,224,0.4); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .content { padding: 16px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .topbar { padding: 12px 16px; }
+  table { font-size: 13px; }
+  th, td { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="page-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div>🔧</div>
+      <div>Admin MécanoCheck</div>
+    </div>
+    <div id="login-err" class="login-err"></div>
+    <div class="field">
+      <label class="lbl">Email</label>
+      <input type="email" id="login-email" placeholder="mohamedyajjouti@gmail.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label class="lbl">Mot de passe</label>
+      <input type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login-main" id="btn-login" onclick="doLogin()">Se connecter</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">⚙ Mécano<span>Check</span> Admin</div>
+    <div class="topbar-right">
+      <div class="admin-badge" id="admin-email"></div>
+      <button class="btn-logout" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card stat-total">
+        <div class="stat-label">Total demandes</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card stat-attente">
+        <div class="stat-label">En attente</div>
+        <div class="stat-value" id="stat-attente">—</div>
+      </div>
+      <div class="stat-card stat-ok">
+        <div class="stat-label">Certifiés</div>
+        <div class="stat-value" id="stat-ok">—</div>
+      </div>
+      <div class="stat-card stat-err">
+        <div class="stat-label">Refusés</div>
+        <div class="stat-value" id="stat-err">—</div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-header">
+      <div class="table-title">Demandes de certification ⭐</div>
+      <button class="btn-refresh" onclick="chargerDemandes()">↻ Actualiser</button>
+    </div>
+
+    <div class="table-wrap">
+      <div id="loading">
+        <div class="spinner"></div>
+        <div class="loading-txt">Chargement...</div>
+      </div>
+      <div id="table-wrap" style="display:none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Garage</th>
+              <th>Contact</th>
+              <th>Fiche</th>
+              <th>Statut</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

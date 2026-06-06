@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/garage/:id", "destination": "/garage.html" }
+    { "source": "/garage/:id", "destination": "/garage.html" },
+    { "source": "/admin", "destination": "/admin.html" }
   ]
 }
