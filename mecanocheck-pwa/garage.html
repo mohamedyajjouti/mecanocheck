@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Fiche Garage — MécanoCheck</title>
+<meta name="description" content="Fiche garage certifiée MécanoCheck">
+<link rel="icon" href="/icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAexcr2UpGHT-HzVpCF0CksWTWMJ5682l0",
+    authDomain: "mecanocheck.firebaseapp.com",
+    projectId: "mecanocheck",
+    storageBucket: "mecanocheck.firebasestorage.app",
+    messagingSenderId: "284992192415",
+    appId: "1:284992192415:web:24cde8b4ea1ad8a57547aa"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Extraire l'ID depuis l'URL : /garage/[id]
+  const pathParts = window.location.pathname.split('/');
+  const garageId = pathParts[pathParts.length - 1];
+
+  async function chargerFiche() {
+    if (!garageId || garageId === 'garage') {
+      afficherErreur('Lien invalide.');
+      return;
+    }
+    try {
+      const snap = await getDoc(doc(db, 'garages', garageId));
+      if (!snap.exists()) {
+        afficherErreur('Ce garage n\'existe pas ou a supprimé sa fiche.');
+        return;
+      }
+      afficherFiche(snap.data());
+    } catch(e) {
+      afficherErreur('Erreur de connexion. Vérifie ta connexion internet.');
+    }
+  }
+
+  function afficherFiche(f) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('fiche').style.display = 'block';
+
+    // Avatar
+    const avatar = document.getElementById('pub-avatar');
+    avatar.textContent = (f.nom || 'G').charAt(0).toUpperCase();
+
+    // Infos principales
+    document.getElementById('pub-nom').textContent = f.nom || '';
+    document.getElementById('pub-adresse').textContent = f.adresse || '';
+    document.getElementById('pub-accroche').textContent = f.accroche ? `"${f.accroche}"` : '';
+
+    // Points forts
+    if (f.points && f.points.length) {
+      document.getElementById('pub-points').innerHTML = f.points.map(p =>
+        `<div style="display:flex;align-items:center;gap:8px;">
+          <span style="color:#d4af37;font-size:14px;">✦</span>
+          <span style="font-size:13px;color:rgba(245,240,224,0.85);">${p}</span>
+        </div>`
+      ).join('');
+    }
+
+    // Tags spécialités
+    if (f.tags && f.tags.length) {
+      document.getElementById('pub-tags').innerHTML = f.tags.map(t =>
+        `<span style="padding:4px 10px;border-radius:20px;font-size:11px;border:0.5px solid rgba(212,175,55,0.4);color:#d4af37;background:rgba(212,175,55,0.08);">${t}</span>`
+      ).join('');
+    } else {
+      document.getElementById('pub-tags-section').style.display = 'none';
+    }
+
+    // Tarifs
+    if (f.tarifs && f.tarifs.length) {
+      document.getElementById('pub-tarifs-list').innerHTML = f.tarifs.map(t =>
+        `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:0.5px solid rgba(212,175,55,0.1);">
+          <span style="color:rgba(245,240,224,0.75);">${t.label}</span>
+          <span style="font-weight:700;color:#d4af37;">${t.prix}</span>
+        </div>`
+      ).join('');
+    } else {
+      document.getElementById('pub-tarifs-section').style.display = 'none';
+    }
+
+    // Horaires
+    const hp = [];
+    if (f.hSem) hp.push('Lun–Ven : ' + f.hSem);
+    if (f.hSam) hp.push('Sam : ' + f.hSam);
+    if (f.dim) hp.push('Dim : ouvert');
+    document.getElementById('pub-horaires').textContent = hp.join(' · ') || 'Non précisés';
+
+    // Contact
+    document.getElementById('pub-tel').textContent = f.tel || 'Non précisé';
+    document.getElementById('pub-tel-link').href = f.tel ? `tel:${f.tel}` : '#';
+    if (f.email) {
+      document.getElementById('pub-email-row').style.display = 'flex';
+      document.getElementById('pub-email').textContent = f.email;
+      document.getElementById('pub-email-link').href = `mailto:${f.email}`;
+    }
+
+    // Langues
+    document.getElementById('pub-langues').textContent = (f.langues && f.langues.length) ? f.langues.join(', ') : 'Non précisées';
+
+    // Délai
+    if (f.delai) {
+      document.getElementById('pub-delai-row').style.display = 'flex';
+      document.getElementById('pub-delai').textContent = f.delai;
+    }
+
+    // Titre page
+    document.title = (f.nom || 'Garage') + ' — MécanoCheck';
+
+    // Bouton Maps si adresse
+    if (f.adresse) {
+      const mapsBtn = document.getElementById('btn-maps');
+      mapsBtn.style.display = 'flex';
+      mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.adresse)}`;
+    }
+  }
+
+  function afficherErreur(msg) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('erreur').style.display = 'block';
+    document.getElementById('erreur-msg').textContent = msg;
+  }
+
+  chargerFiche();
+</script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0a0a0a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 40px;
+}
+.page-wrap {
+  width: 100%;
+  max-width: 430px;
+}
+
+/* TOPBAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px 12px;
+  border-bottom: 0.5px solid rgba(212,175,55,0.15);
+  margin-bottom: 0;
+}
+.logo-wrap {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #00D68F, #00A86B);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.brand { font-size: 15px; font-weight: 800; color: #f5f0e0; letter-spacing: -0.3px; }
+.brand span { color: #d4af37; }
+
+/* LOADING */
+#loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+}
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid rgba(212,175,55,0.2);
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: rgba(245,240,224,0.5); font-weight: 500; }
+
+/* ERREUR */
+#erreur {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 24px;
+  gap: 12px;
+  text-align: center;
+}
+.err-icon { font-size: 48px; }
+.err-title { font-size: 18px; font-weight: 800; color: #f5f0e0; }
+.err-sub { font-size: 14px; color: rgba(245,240,224,0.5); line-height: 1.5; }
+
+/* FICHE */
+#fiche { display: none; padding: 20px 16px 0; }
+
+.card-wrap {
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #d4af37;
+  margin-bottom: 16px;
+}
+
+/* Header fiche */
+.fiche-header {
+  background: #0f0f0f;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.fiche-header::before {
+  content: '';
+  position: absolute;
+  top: -50px; right: -50px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  border: 1px solid rgba(212,175,55,0.15);
+  pointer-events: none;
+}
+.fiche-header::after {
+  content: '⚙';
+  position: absolute;
+  bottom: 10px; right: 20px;
+  font-size: 80px;
+  opacity: 0.06;
+  pointer-events: none;
+  line-height: 1;
+}
+.fiche-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.fiche-avatar {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #d4af37, #f0d060);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #0f0f0f;
+  flex-shrink: 0;
+}
+.fiche-nom { font-size: 17px; font-weight: 700; color: #f5f0e0; line-height: 1.2; }
+.fiche-adresse { font-size: 12px; color: #d4af37; margin-top: 2px; }
+.badge-verifie {
+  background: rgba(212,175,55,0.15);
+  border: 0.5px solid rgba(212,175,55,0.4);
+  border-radius: 8px;
+  padding: 5px 9px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.badge-verifie div:first-child { font-size: 9px; color: #d4af37; letter-spacing: 0.05em; font-weight: 700; }
+.badge-verifie div:last-child { font-size: 9px; color: rgba(212,175,55,0.7); }
+
+.fiche-accroche {
+  font-size: 13px;
+  color: rgba(245,240,224,0.8);
+  font-style: italic;
+  line-height: 1.6;
+  border-left: 2px solid #d4af37;
+  padding-left: 12px;
+  margin-bottom: 16px;
+}
+
+/* Tags */
+.fiche-tags {
+  background: #161616;
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-top: 0.5px solid rgba(212,175,55,0.2);
+  border-bottom: 0.5px solid rgba(212,175,55,0.2);
+}
+
+/* Tarifs */
+.fiche-tarifs {
+  background: #141414;
+  padding: 14px 24px;
+  border-bottom: 0.5px solid rgba(212,175,55,0.2);
+}
+.tarifs-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #d4af37;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+/* Infos bas */
+.fiche-infos {
+  background: #0f0f0f;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(245,240,224,0.6);
+  text-decoration: none;
+}
+.info-row.clickable:hover { color: #d4af37; }
+.info-icon { font-size: 14px; flex-shrink: 0; }
+
+/* Footer fiche */
+.fiche-footer {
+  background: #0a0a0a;
+  padding: 8px 24px;
+  display: flex;
+  justify-content: center;
+  border-top: 0.5px solid rgba(212,175,55,0.15);
+}
+.fiche-footer div { font-size: 10px; color: rgba(212,175,55,0.4); }
+
+/* BOUTONS ACTION */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px;
+  border-radius: 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+}
+.btn-tel {
+  background: linear-gradient(135deg, #00D68F, #00A86B);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0,214,143,0.3);
+}
+.btn-maps {
+  background: rgba(212,175,55,0.12);
+  color: #d4af37;
+  border: 1px solid rgba(212,175,55,0.3);
+  display: none;
+}
+.btn-share {
+  background: rgba(255,255,255,0.06);
+  color: rgba(245,240,224,0.7);
+  border: 1px solid rgba(255,255,255,0.1);
+  grid-column: 1 / -1;
+}
+
+/* FOOTER PAGE */
+.page-footer {
+  margin-top: 8px;
+  text-align: center;
+  padding: 0 20px 20px;
+}
+.page-footer a {
+  font-size: 12px;
+  color: rgba(212,175,55,0.5);
+  text-decoration: none;
+  font-weight: 600;
+}
+.page-footer a:hover { color: #d4af37; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo-wrap">🔧</div>
+    <div class="brand">Mécano<span>Check</span></div>
+    <div style="margin-left:auto;font-size:11px;color:rgba(212,175,55,0.6);font-weight:600;">Fiche certifiée</div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Chargement de la fiche...</div>
+  </div>
+
+  <!-- ERREUR -->
+  <div id="erreur" style="display:none;flex-direction:column;align-items:center;padding:60px 24px;gap:12px;text-align:center;">
+    <div style="font-size:48px;">🔍</div>
+    <div style="font-size:18px;font-weight:800;color:#f5f0e0;">Fiche introuvable</div>
+    <div id="erreur-msg" style="font-size:14px;color:rgba(245,240,224,0.5);line-height:1.5;"></div>
+    <a href="https://mecanocheck.vercel.app" style="margin-top:8px;background:rgba(212,175,55,0.12);color:#d4af37;border:1px solid rgba(212,175,55,0.3);border-radius:12px;padding:12px 24px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;text-decoration:none;">
+      Ouvrir MécanoCheck
+    </a>
+  </div>
+
+  <!-- FICHE -->
+  <div id="fiche">
+
+    <div class="card-wrap">
+
+      <!-- Header -->
+      <div class="fiche-header">
+        <div class="fiche-top-row">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="fiche-avatar" id="pub-avatar">G</div>
+            <div>
+              <div class="fiche-nom" id="pub-nom"></div>
+              <div class="fiche-adresse" id="pub-adresse"></div>
+            </div>
+          </div>
+          <div class="badge-verifie">
+            <div>VÉRIFIÉ</div>
+            <div>MécanoCheck</div>
+          </div>
+        </div>
+        <div class="fiche-accroche" id="pub-accroche"></div>
+        <div id="pub-points" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+      <!-- Tags -->
+      <div class="fiche-tags" id="pub-tags-section">
+        <div id="pub-tags"></div>
+      </div>
+
+      <!-- Tarifs -->
+      <div class="fiche-tarifs" id="pub-tarifs-section">
+        <div class="tarifs-title">TARIFS INDICATIFS</div>
+        <div id="pub-tarifs-list"></div>
+      </div>
+
+      <!-- Infos contact -->
+      <div class="fiche-infos">
+        <div class="info-row">
+          <span class="info-icon">🕐</span>
+          <span id="pub-horaires"></span>
+        </div>
+        <a class="info-row clickable" id="pub-tel-link" href="#">
+          <span class="info-icon">📞</span>
+          <span id="pub-tel"></span>
+        </a>
+        <a class="info-row clickable" id="pub-email-row" href="#" style="display:none;" id="pub-email-link">
+          <span class="info-icon">✉️</span>
+          <span id="pub-email"></span>
+        </a>
+        <div class="info-row">
+          <span class="info-icon">🌍</span>
+          <span id="pub-langues"></span>
+        </div>
+        <div class="info-row" id="pub-delai-row" style="display:none;">
+          <span class="info-icon">⚡</span>
+          <span id="pub-delai"></span>
+        </div>
+      </div>
+
+      <!-- Footer fiche -->
+      <div class="fiche-footer">
+        <div>⚙ MécanoCheck — Garage certifié</div>
+      </div>
+
+    </div>
+
+    <!-- Boutons action -->
+    <div class="actions">
+      <a class="btn-action btn-tel" id="pub-tel-link" href="#">📞 Appeler</a>
+      <a class="btn-action btn-maps" id="btn-maps" href="#" target="_blank">📍 Maps</a>
+      <button class="btn-action btn-share" onclick="partager()">📤 Partager cette fiche</button>
+    </div>
+
+  </div>
+
+  <!-- FOOTER PAGE -->
+  <div class="page-footer">
+    <a href="https://mecanocheck.vercel.app">Télécharger MécanoCheck gratuitement →</a>
+  </div>
+
+</div>
+
+<script>
+function partager() {
+  const url = window.location.href;
+  const nom = document.getElementById('pub-nom').textContent;
+  if (navigator.share) {
+    navigator.share({ title: nom, text: 'Découvre ce garage sur MécanoCheck', url });
+  } else {
+    navigator.clipboard.writeText(url).then(() => alert('Lien copié !'));
+  }
+}
+</script>
+</body>
+</html>
