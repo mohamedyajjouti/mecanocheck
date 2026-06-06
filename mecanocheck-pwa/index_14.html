@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAexcr2UpGHT-HzVpCF0CksWTWMJ5682l0",
+    authDomain: "mecanocheck.firebaseapp.com",
+    projectId: "mecanocheck",
+    storageBucket: "mecanocheck.firebasestorage.app",
+    messagingSenderId: "284992192415",
+    appId: "1:284992192415:web:24cde8b4ea1ad8a57547aa"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  // Exposer l'utilisateur courant globalement
+  window._currentUser = null;
+  onAuthStateChanged(auth, (user) => {
+    window._currentUser = user;
+    if (typeof window.onAuthChanged === 'function') window.onAuthChanged(user);
+  });
+
+  // AUTH — Inscription
+  window.firebaseInscrire = async function(email, password) {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    return cred.user;
+  };
+
+  // AUTH — Connexion
+  window.firebaseConnecter = async function(email, password) {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    return cred.user;
+  };
+
+  // AUTH — Déconnexion
+  window.firebaseDeconnecter = async function() {
+    await signOut(auth);
+  };
+
+  // Sauvegarder une fiche garage (garageId = uid si connecté, sinon timestamp)
+  window.saveFicheGarage = async function(ficheData) {
+    const id = window._currentUser ? window._currentUser.uid : Date.now().toString();
+    await setDoc(doc(db, 'garages', id), {
+      ...ficheData,
+      id,
+      createdAt: new Date().toISOString()
+    });
+    return id;
+  };
+
+  // Récupérer une fiche par ID
+  window.getFicheGarage = async function(id) {
+    const snap = await getDoc(doc(db, 'garages', id));
+    return snap.exists() ? snap.data() : null;
+  };
+
+  // Récupérer toutes les fiches
+  window.getAllFiches = async function() {
+    const snap = await getDocs(collection(db, 'garages'));
+    return snap.docs.map(d => d.data());
+  };
+
+  console.log('Firebase + Auth initialisés ✅');
+</script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MécanoCheck</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#FF6B35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MécanoCheck">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Vérifiez si votre devis garagiste est honnête. Analyse IA, garages proches, guide conducteur.">
+<meta property="og:title" content="MécanoCheck — Anti-arnaque garagiste">
+<meta property="og:description" content="L'IA qui vérifie si votre devis garagiste est honnête">
+<meta property="og:image" content="/icons/icon-512.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCI8XwmM8ukbEuTHLyRLaK6vSmG3DggD_M&libraries=places"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --o:#FF6B35;--od:#E55A00;--ol:#FFF0EA;
+  --g:#00D68F;--gd:#00A86B;--gl:#E0FFF4;
+  --b:#5B5FEF;--bd:#3730D4;--bl:#EEEFFE;
+  --r:#FF3B5C;--rl:#FFF0F3;
+  --y:#FFBB00;--yl:#FFFBEA;
+  --bg:#F0F2F5;--card:#FFFFFF;
+  --t:#0A0E1A;--m:#7B8599;--light:#B8BFCF;
+  --border:#E8EBF0;
+  --rad:20px;--rads:14px;--radxs:10px;
+  --shadow:0 4px 24px rgba(10,14,26,0.08);
+  --shadow-sm:0 2px 12px rgba(10,14,26,0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t);overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100vh;height:-webkit-fill-available;max-width:430px;margin:0 auto;position:relative;background:var(--bg);}
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:90px;}
+.scroll-area::-webkit-scrollbar{display:none;}
+.topbar{flex-shrink:0;display:flex;align-items:center;padding:14px 20px 10px;background:var(--bg);gap:12px;z-index:10;}
+.logo{width:36px;height:36px;background:var(--o);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(255,107,53,0.35);}
+.app-name{font-size:17px;font-weight:900;letter-spacing:-0.5px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.badge{font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;cursor:pointer;}
+.badge-free{background:linear-gradient(135deg,var(--o),var(--od));color:#fff;}
+.badge-premium{background:linear-gradient(135deg,#FFD700,#FF8C00);color:#fff;}
+.badge-pro{background:linear-gradient(135deg,var(--b),var(--bd));color:#fff;}
+.mode-bar{flex-shrink:0;display:flex;background:rgba(0,0,0,0.06);border-radius:12px;padding:3px;margin:0 20px 12px;gap:2px;}
+.mode-btn{flex:1;padding:8px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--m);cursor:pointer;border-radius:10px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.mode-btn.active{background:#fff;color:var(--t);box-shadow:var(--shadow-sm);}
+.mode-btn.active-pro{background:var(--b);color:#fff;}
+.screen{display:none;padding:0 16px;width:100%;box-sizing:border-box;}
+.screen.active{display:block;}
+#screen-loading.active,#screen-chat.active{display:flex;}
+.bnav{flex-shrink:0;display:flex;background:var(--card);border-top:1px solid var(--border);padding:8px 4px 20px;gap:2px;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:var(--light);font-size:10px;font-weight:600;border:none;background:transparent;font-family:'Inter',sans-serif;padding:6px 2px;border-radius:12px;transition:all 0.2s;min-height:52px;}
+.ni.active{color:var(--o);}
+.ni.active-pro{color:var(--b);}
+.ni svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.card{background:var(--card);border-radius:var(--rad);padding:18px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+.card-sm{background:var(--card);border-radius:var(--rads);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm);}
+.btn{width:100%;background:var(--o);color:#fff;border:none;border-radius:var(--rads);padding:15px;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;box-shadow:0 6px 20px rgba(255,107,53,0.3);}
+.btn:active{transform:scale(0.97);}
+.btn-green{background:var(--g);box-shadow:0 6px 20px rgba(0,214,143,0.3);}
+.btn-pro{background:var(--b);box-shadow:0 6px 20px rgba(91,95,239,0.3);}
+.btn-ghost{background:var(--bg);color:var(--t);box-shadow:none;border:1.5px solid var(--border);}
+.btn-sm{padding:10px 16px;font-size:13px;width:auto;border-radius:var(--radxs);}
+.btn-back{background:var(--bg);border:none;border-radius:var(--radxs);padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--m);cursor:pointer;display:flex;align-items:center;gap:5px;}
+.field{margin-bottom:12px;}
+.lbl{font-size:11px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px;display:block;}
+input,select,textarea{width:100%;font-family:'Inter',sans-serif;font-size:15px;color:var(--t);background:var(--bg);border:1.5px solid transparent;border-radius:var(--rads);padding:13px 14px;outline:none;transition:all 0.15s;-webkit-appearance:none;appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--o);background:#fff;box-shadow:0 0 0 4px rgba(255,107,53,0.1);}
+textarea{resize:none;line-height:1.5;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.section-title{font-size:18px;font-weight:800;letter-spacing:-0.3px;}
+.section-action{font-size:13px;font-weight:600;color:var(--o);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;}
+.sec-title{font-size:11px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.hero{border-radius:var(--rad);padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden;}
+.hero-content{position:relative;z-index:1;}
+.hero-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:6px;}
+.hero-title{font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:5px;}
+.hero-sub{font-size:13px;opacity:0.8;line-height:1.5;}
+#screen-loading{flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:24px;text-align:center;padding:20px;}
+.spinner{width:52px;height:52px;border:3px solid var(--border);border-top-color:var(--o);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.score-card{border-radius:var(--rad);padding:20px;margin-bottom:14px;display:flex;align-items:center;gap:14px;}
+.score-icon-wrap{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+.score-ok{background:var(--gl);}.score-ok .score-icon-wrap{background:#00D68F;}
+.score-warn{background:var(--ol);}.score-warn .score-icon-wrap{background:var(--o);}
+.score-danger{background:var(--rl);}.score-danger .score-icon-wrap{background:var(--r);}
+.score-label{font-size:20px;font-weight:900;letter-spacing:-0.5px;}
+.score-ok .score-label{color:#005C3A;}.score-warn .score-label{color:#8B3A00;}.score-danger .score-label{color:#8B0020;}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--bg);font-size:14px;}
+.rrow:last-child{border-bottom:none;}
+.rl{color:var(--m);font-weight:500;}.rv{font-weight:700;}
+.rv.ok{color:var(--gd);}.rv.warn{color:var(--o);}.rv.danger{color:var(--r);}
+.arg-box{background:var(--gl);border-radius:var(--rads);padding:14px;border-left:3px solid var(--g);font-size:14px;line-height:1.6;color:#004D32;font-style:italic;}
+.pill{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
+.p-ok{background:var(--gl);color:#005C3A;}.p-warn{background:var(--ol);color:#8B3A00;}.p-danger{background:var(--rl);color:#8B0020;}.p-blue{background:var(--bl);color:#2B2FBF;}
+.tag{background:var(--bg);border-radius:var(--radxs);padding:4px 10px;font-size:11px;font-weight:600;color:var(--m);}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--m);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.15s;}
+.chip.active{background:var(--o);border-color:var(--o);color:#fff;box-shadow:0 4px 10px rgba(255,107,53,0.3);}
+.icon-card{background:var(--card);border-radius:var(--rad);padding:16px;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;align-items:flex-start;gap:10px;}
+.icon-card:active{transform:scale(0.97);}
+.hcard{background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:10px;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow-sm);}
+.hcard:active{transform:scale(0.98);}
+#screen-chat{flex-direction:column;height:calc(100vh - 160px);padding:0;}
+.chatheader{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.chatavatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--o),var(--od));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 12px rgba(255,107,53,0.3);}
+.chatname{font-size:15px;font-weight:800;}.chatstatus{font-size:12px;color:var(--g);font-weight:600;}
+.chatclear{margin-left:auto;background:none;border:none;font-size:13px;color:var(--m);cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;}
+.chatmsgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.chatmsgs::-webkit-scrollbar{display:none;}
+.cbub{display:flex;}.cbub.bot{justify-content:flex-start;}.cbub.user{justify-content:flex-end;}
+.btext{max-width:82%;padding:12px 15px;border-radius:18px;font-size:14px;line-height:1.55;font-weight:500;}
+.cbub.bot .btext{background:var(--card);border-bottom-left-radius:5px;box-shadow:var(--shadow-sm);}
+.cbub.user .btext{background:var(--o);color:#fff;border-bottom-right-radius:5px;}
+.bdots{display:flex;gap:5px;align-items:center;padding:10px 14px;}
+.dot{width:8px;height:8px;background:var(--light);border-radius:50%;animation:bonce 1.2s infinite;}
+.dot:nth-child(2){animation-delay:0.2s;}.dot:nth-child(3){animation-delay:0.4s;}
+@keyframes bonce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.chatbar{display:flex;align-items:center;gap:8px;padding:10px 16px 16px;background:var(--card);border-top:1px solid var(--border);flex-shrink:0;}
+#chat-input{flex:1;border-radius:24px;padding:12px 16px;font-size:14px;font-weight:500;}
+.micbtn,.sendbtn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.micbtn{background:var(--bg);}.micbtn svg{width:18px;height:18px;stroke:var(--m);fill:none;stroke-width:2;stroke-linecap:round;}
+.micbtn.rec{background:var(--rl);}.micbtn.rec svg{stroke:var(--r);}
+.sendbtn{background:var(--o);box-shadow:0 4px 12px rgba(255,107,53,0.3);}
+.sendbtn svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2;}
+.audiobtn{background:none;border:none;font-size:12px;cursor:pointer;margin-top:5px;display:block;color:var(--m);font-family:'Inter',sans-serif;font-weight:600;}
+.gcard{background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:10px;box-shadow:var(--shadow-sm);}
+.gname{font-size:15px;font-weight:700;margin-bottom:2px;}.gdist{font-size:12px;color:var(--m);font-weight:600;}.gaddr{font-size:13px;color:var(--m);line-height:1.4;margin-top:4px;}
+.filtre-chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none;}
+.filtre-chips::-webkit-scrollbar{display:none;}
+.wfield{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--bg);}
+.wfield:last-child{border-bottom:none;}
+.wicon{width:36px;color:var(--o);flex-shrink:0;}.wicon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;}
+.winfo{flex:1;}.wlbl{font-size:10px;color:var(--m);margin-bottom:2px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.winfo input{border:none;background:transparent;padding:0;font-size:15px;font-weight:600;border-radius:0;}
+.winfo input:focus{border:none;box-shadow:none;background:transparent;}
+.ditem{background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+.dhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.dnum{font-size:13px;font-weight:800;color:var(--o);}
+.dremove{background:none;border:none;cursor:pointer;color:var(--r);font-size:18px;padding:4px;}
+.btn-add{width:100%;background:none;border:2px dashed var(--border);border-radius:var(--rads);padding:13px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:var(--o);cursor:pointer;margin-bottom:12px;transition:all 0.15s;}
+.fg-chip{padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--card);color:var(--t);cursor:pointer;display:inline-block;}
+.photobtn{display:flex;align-items:center;gap:10px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--rads);padding:13px 14px;font-size:13px;font-weight:600;color:var(--b);cursor:pointer;width:100%;transition:all 0.15s;}
+.photobtn input{display:none;}
+.photoprev img{width:100%;max-height:160px;object-fit:cover;border-radius:var(--rads);}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.plan-card{background:var(--card);border-radius:var(--rad);padding:18px;border:2px solid var(--border);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;}
+.plan-card.featured{border-color:var(--b);background:linear-gradient(160deg,#F0F0FF,#fff);}
+.plan-badge{position:absolute;top:12px;right:-8px;background:var(--b);color:#fff;font-size:9px;font-weight:800;padding:3px 14px 3px 10px;border-radius:4px 0 0 4px;}
+.plan-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--m);margin-bottom:6px;}
+.plan-price{font-size:26px;font-weight:900;letter-spacing:-1px;margin-bottom:2px;}
+.plan-period{font-size:12px;color:var(--m);margin-bottom:10px;}
+.plan-btn{width:100%;border:none;border-radius:var(--radxs);padding:11px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.plan-btn-user{background:var(--gl);color:var(--gd);}.plan-btn-pro{background:var(--b);color:#fff;}
+.feat-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg);font-size:13px;line-height:1.4;}
+.feat-row:last-child{border-bottom:none;}
+.feat-check{flex-shrink:0;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;}
+.usage-bar{background:var(--card);border-radius:var(--rads);padding:11px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-sm);}
+.usage-text{font-size:13px;color:var(--m);font-weight:500;}.usage-count{font-size:13px;font-weight:700;color:var(--o);}
+.pcard{background:var(--card);border-radius:var(--rads);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);}
+.plogo{font-size:22px;width:36px;text-align:center;flex-shrink:0;}.pinfo{flex:1;}
+.psite{font-size:13px;font-weight:700;}.pprix{font-size:15px;font-weight:900;color:var(--o);}.pdispo{font-size:11px;color:var(--m);}
+.pbtn{background:var(--o);color:#fff;border:none;border-radius:var(--radxs);padding:8px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.pro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.pro-tool-card{background:var(--card);border-radius:var(--rad);padding:16px;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow-sm);}
+.pro-tool-card:active{transform:scale(0.97);}
+.ptc-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;}
+.ptc-title{font-size:13px;font-weight:700;margin-bottom:3px;}.ptc-sub{font-size:11px;color:var(--m);line-height:1.4;}
+.devis-line{display:grid;grid-template-columns:1fr 60px 70px 30px;gap:6px;align-items:center;margin-bottom:8px;}
+.devis-line input{font-size:13px;padding:9px 10px;}
+.devis-del{background:none;border:none;cursor:pointer;color:var(--r);font-size:18px;padding:0;}
+.devis-total-bar{background:linear-gradient(135deg,var(--o),var(--od));border-radius:var(--rads);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.dtl-label{font-size:13px;font-weight:700;color:rgba(255,255,255,0.8);}.dtl-amount{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;}
+.voyant-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.voyant-card{background:var(--card);border-radius:var(--rads);padding:14px;box-shadow:var(--shadow-sm);border-left:4px solid transparent;cursor:pointer;transition:all 0.15s;}
+.voyant-card:active{transform:scale(0.97);}
+.voyant-card.urgence-3{border-left-color:var(--r);}.voyant-card.urgence-2{border-left-color:var(--o);}.voyant-card.urgence-1{border-left-color:var(--y);}.voyant-card.urgence-0{border-left-color:var(--b);}
+.voyant-icon{margin-bottom:8px;}.voyant-name{font-size:12px;font-weight:700;margin-bottom:3px;}
+.voyant-badge{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;padding:2px 7px;border-radius:20px;display:inline-block;}
+.obd-code{background:var(--card);border-radius:var(--rads);padding:14px;margin-bottom:8px;box-shadow:var(--shadow-sm);cursor:pointer;}
+.obd-code .ahead{display:flex;align-items:center;gap:12px;}
+.obd-badge{font-size:13px;font-weight:900;padding:4px 12px;border-radius:8px;font-family:'Courier New',monospace;}
+.obd-desc{font-size:13px;font-weight:600;flex:1;}
+.obd-detail{display:none;padding-top:10px;font-size:13px;color:var(--m);line-height:1.6;}
+.obd-code.open .obd-detail{display:block;}
+.obd-code .aarrow{color:var(--light);font-size:18px;transition:transform 0.2s;}
+.obd-code.open .aarrow{transform:rotate(90deg);}
+.annonce-step{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg);}
+.annonce-step:last-child{border-bottom:none;}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--t);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--t);color:#fff;border-radius:var(--rads);padding:12px 20px;font-size:13px;font-weight:600;display:none;z-index:9999;white-space:nowrap;box-shadow:var(--shadow);}
+.toast.show{display:block;}
+.accueil-cta{background:linear-gradient(135deg,var(--o),var(--od));border-radius:var(--rad);padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 8px 24px rgba(255,107,53,0.35);}
+.accueil-cta:active{transform:scale(0.98);}
+.accueil-cta-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.accueil-cta-title{font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.3px;}
+.accueil-cta-sub{font-size:12px;color:rgba(255,255,255,0.8);margin-top:3px;}
+.last-analyse-card{background:var(--card);border-radius:var(--rads);padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);cursor:pointer;}
+.last-analyse-card:active{transform:scale(0.98);}
+.la-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.la-info{flex:1;}.la-title{font-size:14px;font-weight:700;}.la-sub{font-size:12px;color:var(--m);margin-top:2px;}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.quick-card{background:var(--card);border-radius:var(--rad);padding:16px;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow-sm);}
+.quick-card:active{transform:scale(0.97);}
+.qc-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;}
+.qc-title{font-size:13px;font-weight:700;margin-bottom:3px;}.qc-sub{font-size:11px;color:var(--m);line-height:1.4;}
+.vehicle-hero{background:linear-gradient(135deg,var(--t),#1E2435);border-radius:var(--rad);padding:20px;margin-bottom:14px;color:#fff;}
+.vh-label{font-size:11px;font-weight:700;opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
+.vh-name{font-size:20px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px;}.vh-sub{font-size:13px;opacity:0.7;}
+.vh-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;}
+.vh-stat{background:rgba(255,255,255,0.1);border-radius:10px;padding:10px;}
+.vh-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;opacity:0.6;letter-spacing:0.06em;}
+.vh-stat-val{font-size:15px;font-weight:800;margin-top:3px;}.vh-stat-val.warn{color:#FFB800;}
+.menu-list-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bg);cursor:pointer;}
+.menu-list-item:last-child{border-bottom:none;}
+.mli-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.mli-info{flex:1;}.mli-title{font-size:14px;font-weight:600;}.mli-sub{font-size:12px;color:var(--m);margin-top:1px;}
+.mli-arrow{color:var(--light);font-size:18px;}
+.profil-header{background:linear-gradient(135deg,var(--o),var(--od));border-radius:var(--rad);padding:22px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;color:#fff;}
+.profil-avatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;}
+.profil-name{font-size:18px;font-weight:800;letter-spacing:-0.3px;}
+.profil-sub{font-size:12px;opacity:0.8;margin-top:3px;}
+.profil-badge{background:rgba(255,255,255,0.25);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;margin-top:8px;display:inline-block;}
+#install-banner{background:var(--card);border-radius:var(--rads);padding:14px 16px;margin:0 16px 12px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-sm);}
+#install-banner p{font-size:13px;font-weight:600;flex:1;}
+#install-banner button{background:var(--o);color:#fff;border:none;border-radius:var(--radxs);padding:8px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.dismiss-install{background:none !important;border:none;color:var(--m);font-size:18px;cursor:pointer;padding:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <circle cx="12" cy="12" r="3" fill="none" stroke="#fff" stroke-width="2"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="9,12 11,14 15,10" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="app-name">MécanoCheck</span>
+    <div class="topbar-right">
+      <span class="badge badge-free" id="badge-plan" onclick="showTab('premium')">✦ Gratuit</span>
+    </div>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="mode-conducteur" onclick="switchMode('conducteur')">🚗 Conducteur</button>
+    <button class="mode-btn" id="mode-pro" onclick="switchMode('pro')">🔧 Pro</button>
+  </div>
+  <div id="install-banner" style="display:none;">
+    <span>📲</span><p>Installer MécanoCheck</p>
+    <button onclick="installApp()">Installer</button>
+    <button class="dismiss-install" onclick="dismissInstall()">✕</button>
+  </div>
+  <div class="scroll-area">
+
+    <!-- ACCUEIL -->
+    <div class="screen active" id="screen-accueil">
+      <div style="padding-top:16px;">
+        <div class="accueil-cta" onclick="showTab('analyser')">
+          <div class="accueil-cta-icon">🛡️</div>
+          <div>
+            <div class="accueil-cta-title">Analyser un devis</div>
+            <div class="accueil-cta-sub">L'IA détecte les arnaques en 10 sec</div>
+          </div>
+          <span style="margin-left:auto;color:rgba(255,255,255,0.7);font-size:22px;">›</span>
+        </div>
+        <div class="section-header">
+          <span class="section-title">Dernière analyse</span>
+        </div>
+        <div id="last-analyse-card" class="last-analyse-card" onclick="showLastResult()" style="display:none;">
+          <div class="la-icon" id="la-icon-bg">🔍</div>
+          <div class="la-info">
+            <div class="la-title" id="la-title">—</div>
+            <div class="la-sub" id="la-sub">—</div>
+          </div>
+          <span id="la-badge" class="pill">—</span>
+        </div>
+        <div id="no-analyse-card" class="card-sm" style="text-align:center;color:var(--m);font-size:13px;">Aucune analyse — lancez votre première !</div>
+        <div class="section-header" style="margin-top:4px;">
+          <span class="section-title">Accès rapide</span>
+        </div>
+        <div class="quick-grid">
+          <div class="quick-card" onclick="showTab('pieces')">
+            <div class="qc-icon" style="background:var(--bl);">🛒</div>
+            <div class="qc-title">Prix des pièces</div>
+            <div class="qc-sub">Comparez Oscaro, Amazon...</div>
+          </div>
+          <div class="quick-card" onclick="showTab('garages')">
+            <div class="qc-icon" style="background:var(--gl);">📍</div>
+            <div class="qc-title">Garages proches</div>
+            <div class="qc-sub">Trouvez un pro fiable</div>
+          </div>
+          <div class="quick-card" onclick="showTab('chat')">
+            <div class="qc-icon" style="background:var(--ol);">💬</div>
+            <div class="qc-title">Mohamed IA</div>
+            <div class="qc-sub">Expert mécanique 24/7</div>
+          </div>
+          <div class="quick-card" onclick="showTab('comparer')">
+            <div class="qc-icon" style="background:var(--yl);">⚖️</div>
+            <div class="qc-title">Comparer devis</div>
+            <div class="qc-sub">Plusieurs garages</div>
+          </div>
+        </div>
+        <div class="usage-bar">
+          <span class="usage-text">Analyses ce mois</span>
+          <span class="usage-count" id="usage-display">— / ∞</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYSER -->
+    <div class="screen" id="screen-analyser">
+      <div style="padding-top:16px;">
+        <div id="sub-home">
+          <div class="hero" style="background:linear-gradient(135deg,var(--t),#2A3348);color:#fff;">
+            <div class="hero-content">
+              <div class="hero-eyebrow">🛡️ MécanoCheck</div>
+              <div class="hero-title">Anti-arnaque garagiste</div>
+              <div class="hero-sub">Analyse IA en 10 secondes · <span style="color:var(--o);font-weight:700;">∞ analyses</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="sec-title">🚗 Votre véhicule</div>
+            <div class="row2" style="margin-bottom:10px;">
+              <select id="marque" style="font-size:13px;padding:11px 12px;font-weight:600;">
+                <option value="">Marque...</option>
+                <option>Abarth</option><option>Alfa Romeo</option><option>Alpine</option><option>Audi</option><option>BMW</option><option>Citroën</option><option>Cupra</option><option>Dacia</option><option>DS</option><option>Fiat</option><option>Ford</option><option>Honda</option><option>Hyundai</option><option>Jaguar</option><option>Jeep</option><option>Kia</option><option>Land Rover</option><option>Lexus</option><option>Mazda</option><option>Mercedes-Benz</option><option>MG</option><option>Mini</option><option>Mitsubishi</option><option>Nissan</option><option>Opel</option><option>Peugeot</option><option>Porsche</option><option>Renault</option><option>Seat</option><option>Skoda</option><option>Smart</option><option>Subaru</option><option>Suzuki</option><option>Tesla</option><option>Toyota</option><option>Volkswagen</option><option>Volvo</option>
+              </select>
+              <select id="modele" style="font-size:13px;padding:11px 12px;font-weight:600;"><option value="">Modèle...</option></select>
+            </div>
+            <div id="modele-custom-wrap" style="display:none;margin-bottom:10px;">
+              <input type="text" id="modele-custom" placeholder="Saisir le modèle manuellement...">
+            </div>
+            <div class="row3">
+              <input type="number" id="annee" placeholder="Année" style="font-size:13px;padding:11px 12px;">
+              <input type="number" id="km" placeholder="Km" style="font-size:13px;padding:11px 12px;">
+              <input type="text" id="immat" placeholder="AB-123-CD" style="font-size:13px;padding:11px 12px;">
+            </div>
+          </div>
+          <div class="card">
+            <div class="sec-title">📋 Le devis</div>
+            <div style="position:relative;margin-bottom:10px;">
+              <textarea id="symptomes" placeholder="Décrivez le problème... ex: bruit à l'avant gauche en virage" rows="3" style="padding-right:60px;"></textarea>
+              <span id="sym-count" style="position:absolute;bottom:10px;right:12px;font-size:11px;color:var(--light);">0 / 300</span>
+            </div>
+            <div style="background:var(--bg);border-radius:var(--rads);padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">💰</span>
+              <div style="flex:1;">
+                <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Montant du devis</div>
+                <input type="number" id="devis" placeholder="ex: 650" style="background:transparent;border:none;padding:0;font-size:20px;font-weight:900;color:var(--t);">
+              </div>
+              <span style="font-size:16px;font-weight:700;color:var(--m);">€</span>
+            </div>
+            <textarea id="detail" placeholder="Détail du devis (optionnel) — ex: Triangle AV 280€ + MO 2h..." rows="2"></textarea>
+          </div>
+          <button class="btn btn-green" onclick="lancerAnalyse()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Analyser ce devis
+          </button>
+          <div class="row2" style="margin-top:10px;margin-bottom:16px;">
+            <label class="photobtn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Scanner photo
+              <input type="file" accept="image/*" onchange="scanDevis(this)">
+            </label>
+            <button class="btn btn-ghost" onclick="showTab('comparer')">⚖️ Comparer</button>
+          </div>
+          <div id="scan-preview" style="margin-bottom:12px;"></div>
+          <div id="scan-status" style="font-size:13px;color:var(--m);font-weight:600;text-align:center;margin-bottom:12px;display:none;"></div>
+        </div>
+
+        <div id="sub-loading" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:24px;text-align:center;padding:20px;">
+          <div style="font-size:48px;animation:pulse 1.5s ease-in-out infinite;">🔍</div>
+          <div>
+            <div style="font-size:17px;font-weight:800;margin-bottom:8px;">Analyse en cours</div>
+            <div id="loading-msg" style="font-size:14px;color:var(--m);">Vérification des prix du marché...</div>
+          </div>
+          <div class="spinner"></div>
+        </div>
+
+        <div id="sub-result" style="display:none;padding-top:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <button class="btn-back" onclick="showSubScreen('home')">← Retour</button>
+            <span id="result-vehicle" style="font-size:13px;font-weight:600;color:var(--m);"></span>
+          </div>
+          <div class="score-card" id="score-card">
+            <div class="score-icon-wrap" id="score-icon-wrap">
+              <span id="score-icon">✓</span>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--m);margin-bottom:3px;">VERDICT</div>
+              <div class="score-label" id="score-text">—</div>
+            </div>
+          </div>
+          <div class="card"><div id="price-breakdown"></div></div>
+          <div class="card">
+            <div class="sec-title">🔎 DIAGNOSTIC</div>
+            <div id="diag-status" style="font-size:13px;font-weight:700;margin-bottom:8px;"></div>
+            <div id="diag-text" style="font-size:14px;color:var(--m);line-height:1.6;"></div>
+          </div>
+          <div class="card">
+            <div class="sec-title">💬 CE QUE VOUS POUVEZ DIRE</div>
+            <div class="arg-box" id="arg-text"></div>
+          </div>
+          <div class="row2" style="margin-bottom:16px;">
+            <button class="btn btn-ghost" onclick="showTab('pieces');prefillPieces()">🛒 Prix pièces</button>
+            <button class="btn btn-ghost" onclick="exportPDF()">📄 PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GARAGES -->
+    <div class="screen" id="screen-garages">
+      <div style="padding-top:16px;">
+        <div class="section-header"><span class="section-title">Garages</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="text" id="ville-search" placeholder="Ville, code postal..." onkeydown="if(event.key==='Enter')rechercherGarages()" style="flex:1;">
+          <button class="btn btn-sm btn-green" onclick="garagesAutourdeMoi()" style="white-space:nowrap;">📍 Moi</button>
+        </div>
+        <div class="filtre-chips">
+          <button class="chip active" onclick="setFiltre(this,'car_repair')">🔧 Mécanique</button>
+          <button class="chip" onclick="setFiltre(this,'car_inspection')">📋 CT</button>
+          <button class="chip" onclick="setFiltre(this,'bodyshop')">🎨 Carrosserie</button>
+          <button class="chip" onclick="setFiltre(this,'tyres')">⚫ Pneus</button>
+          <button class="chip" onclick="setFiltre(this,'car')">🚘 Concessionnaire</button>
+        </div>
+        <div id="map-container" style="height:220px;background:#e8ecf0;position:relative;border-radius:var(--rad);overflow:hidden;margin-bottom:12px;">
+          <div id="leaflet-map" style="height:100%;width:100%;"></div>
+        </div>
+        <div id="garages-list"><div class="card-sm" style="text-align:center;color:var(--m);font-size:13px;">Entrez une ville ou utilisez votre position</div></div>
+      </div>
+    </div>
+
+    <!-- MON AUTO -->
+    <div class="screen" id="screen-monauto">
+      <div style="padding-top:16px;">
+        <div class="vehicle-hero">
+          <div class="vh-label">MON VÉHICULE</div>
+          <div class="vh-name" id="vh-name">Remplir mon véhicule</div>
+          <div class="vh-sub" id="vh-sub">Ajoutez vos informations</div>
+          <div class="vh-stats">
+            <div class="vh-stat"><div class="vh-stat-label">Kilométrage</div><div class="vh-stat-val" id="vh-km">—</div></div>
+            <div class="vh-stat"><div class="vh-stat-label">Prochain CT</div><div class="vh-stat-val warn" id="vh-ct">—</div></div>
+            <div class="vh-stat"><div class="vh-stat-label">Analyses</div><div class="vh-stat-val" id="vh-analyses">0</div></div>
+          </div>
+        </div>
+        <div class="chips" style="margin-bottom:14px;">
+          <button class="chip active" onclick="showMonAutoTab(this,'tab-vehicule')">🚗 Véhicule</button>
+          <button class="chip" onclick="showMonAutoTab(this,'tab-historique')">📋 Historique</button>
+          <button class="chip" onclick="showMonAutoTab(this,'tab-outils')">🛠️ Outils</button>
+        </div>
+
+        <div id="tab-vehicule">
+          <div class="card">
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5"/><circle cx="16" cy="19" r="2"/><circle cx="7" cy="19" r="2"/><path d="M14 17H9m0-5H5"/></svg></div><div class="winfo"><div class="wlbl">Marque & Modèle</div><input type="text" id="w-marque" placeholder="Ex: Renault Clio 4"></div></div>
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="winfo"><div class="wlbl">Année</div><input type="number" id="w-annee" placeholder="Ex: 2018"></div></div>
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="winfo"><div class="wlbl">Kilométrage</div><input type="number" id="w-km" placeholder="Ex: 85000"></div></div>
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="winfo"><div class="wlbl">Immatriculation</div><input type="text" id="w-immat" placeholder="AB-123-CD"></div></div>
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="winfo"><div class="wlbl">Prochain CT</div><input type="date" id="w-ct" style="border:1px solid var(--border);border-radius:8px;padding:8px;font-size:15px;font-weight:600;background:var(--bg);width:100%;"></div></div>
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="winfo"><div class="wlbl">Garage habituel</div><input type="text" id="w-garage" placeholder="Nom du garage"></div></div>
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg></div><div class="winfo"><div class="wlbl">Assureur</div><select id="w-assureur"><option value="">Sélectionner...</option><option>Allianz</option><option>AXA</option><option>Direct Assurance</option><option>Generali</option><option>GMF</option><option>Groupama</option><option>MAAF</option><option>MACIF</option><option>MAIF</option><option>MMA</option><option>Matmut</option><option>SwissLife</option></select></div></div>
+            <div class="wfield"><div class="wicon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="winfo"><div class="wlbl">N° contrat</div><input type="text" id="w-contrat" placeholder="Numéro de contrat"></div></div>
+            <div class="wfield" style="border-bottom:none;"><div class="wicon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.46 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.97a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 17z"/></svg></div><div class="winfo"><div class="wlbl">Tél. assistance</div><input type="tel" id="w-tel-ass" placeholder="01 23 45 67 89"></div></div>
+          </div>
+          <button class="btn btn-green" id="save-btn" onclick="saveWallet()">💾 Enregistrer</button>
+          <button class="btn btn-ghost" onclick="demanderNotifCT()" style="margin-top:10px;margin-bottom:16px;">🔔 Activer les rappels CT</button>
+        </div>
+
+        <div id="tab-historique" style="display:none;">
+          <div id="historique-list"><div class="card-sm" style="text-align:center;color:var(--m);font-size:13px;">Aucune analyse dans l'historique</div></div>
+        </div>
+
+        <div id="tab-outils" style="display:none;">
+          <div class="quick-grid">
+            <div class="quick-card" onclick="showTab('qrcode')"><div class="qc-icon" style="background:var(--bl);">📱</div><div class="qc-title">QR Mécanicien</div><div class="qc-sub">Partager mon véhicule</div></div>
+            <div class="quick-card" onclick="showTab('jeune')"><div class="qc-icon" style="background:var(--ol);">🚗</div><div class="qc-title">Jeune conducteur</div><div class="qc-sub">Guide complet</div></div>
+            <div class="quick-card" onclick="showTab('annonce')"><div class="qc-icon" style="background:var(--gl);">🔍</div><div class="qc-title">Analyser annonce</div><div class="qc-sub">LeBonCoin, 2ème main...</div></div>
+            <div class="quick-card" onclick="showTab('arnaques')"><div class="qc-icon" style="background:var(--rl);">⚠️</div><div class="qc-title">Arnaques fréquentes</div><div class="qc-sub">Les pièges à éviter</div></div>
+          </div>
+          <div class="section-header"><span class="section-title">Réparations</span><button class="section-action" onclick="ajouterReparation()">+ Ajouter</button></div>
+          <div id="reparations-list"><div class="card-sm" style="text-align:center;color:var(--m);font-size:13px;">Aucune réparation enregistrée</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFIL -->
+    <div class="screen" id="screen-profil">
+      <div style="padding-top:16px;">
+        <div class="profil-header">
+          <div class="profil-avatar">M</div>
+          <div>
+            <div class="profil-name">MécanoCheck</div>
+            <div class="profil-sub">Votre assistant auto personnel</div>
+            <div class="profil-badge">✦ Gratuit</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="menu-list-item" onclick="showTab('premium')"><div class="mli-icon" style="background:var(--yl);">⭐</div><div class="mli-info"><div class="mli-title">Passer Premium</div><div class="mli-sub">Analyses illimitées + PDF</div></div><span class="mli-arrow">›</span></div>
+          <div class="menu-list-item" onclick="showTab('chat')"><div class="mli-icon" style="background:var(--ol);">💬</div><div class="mli-info"><div class="mli-title">Mohamed IA</div><div class="mli-sub">Expert mécanique 24/7</div></div><span class="mli-arrow">›</span></div>
+          <div class="menu-list-item" onclick="showTab('arnaques')"><div class="mli-icon" style="background:var(--rl);">⚠️</div><div class="mli-info"><div class="mli-title">Arnaques fréquentes</div><div class="mli-sub">Les pièges à éviter</div></div><span class="mli-arrow">›</span></div>
+          <div class="menu-list-item" onclick="showTab('annonce')"><div class="mli-icon" style="background:var(--gl);">🔍</div><div class="mli-info"><div class="mli-title">Analyser une annonce</div><div class="mli-sub">LeBonCoin, 2ème main...</div></div><span class="mli-arrow">›</span></div>
+          <div class="menu-list-item" onclick="showTab('jeune')"><div class="mli-icon" style="background:var(--ol);">🚗</div><div class="mli-info"><div class="mli-title">Jeune conducteur</div><div class="mli-sub">Guide complet illustré</div></div><span class="mli-arrow">›</span></div>
+        </div>
+        <div class="card">
+          <div class="menu-list-item" style="border:none;" onclick="document.getElementById('carte-grise-input').click()">
+            <div class="mli-icon" style="background:var(--bl);">📄</div>
+            <div class="mli-info"><div class="mli-title">Scanner carte grise</div><div class="mli-sub">Remplissage automatique</div></div>
+            <span class="mli-arrow">›</span>
+            <input type="file" id="carte-grise-input" accept="image/*" style="display:none;" onchange="scanCarteGrise(this)">
+          </div>
+        </div>
+        <div style="text-align:center;font-size:12px;color:var(--light);margin-top:8px;margin-bottom:20px;">MécanoCheck v2.0 · Fait avec ❤️ en France</div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="screen" id="screen-chat" style="padding:0;">
+      <div class="chatheader">
+        <div class="chatavatar">🔧</div>
+        <div><div class="chatname">Mohamed</div><div class="chatstatus">● Expert mécanique IA</div></div>
+        <button class="chatclear" onclick="clearChat()">Effacer</button>
+        <button class="btn-back" onclick="showTab('accueil')" style="margin-left:8px;">✕</button>
+      </div>
+      <div class="chatmsgs" id="chatmsgs">
+        <div class="cbub bot"><div class="btext">Bonjour ! Je suis Mohamed, votre expert mécanique IA. 🔧 Décrivez-moi votre problème ou posez-moi n'importe quelle question sur votre voiture !</div></div>
+      </div>
+      <div class="chatbar">
+        <button class="micbtn" id="mic-btn" onclick="toggleMic()">
+          <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <input type="text" id="chat-input" placeholder="Posez votre question..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="sendbtn" onclick="sendChat()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- PIECES -->
+    <div class="screen" id="screen-pieces">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <button class="btn-back" onclick="showTab('accueil')">← Retour</button>
+          <span class="section-title">Prix des pièces</span>
+        </div>
+        <div class="card">
+          <div class="sec-title">🚗 Véhicule</div>
+          <div id="pieces-vehicle-info" style="font-size:13px;color:var(--m);margin-bottom:10px;">Aucun véhicule — <span style="color:var(--o);cursor:pointer;font-weight:700;" onclick="showTab('monauto')">Remplir Mon véhicule</span></div>
+          <div class="row3" style="margin-bottom:8px;">
+            <input type="text" id="piece-marque" placeholder="Marque" style="font-size:13px;padding:9px 10px;font-weight:600;">
+            <input type="text" id="piece-modele" placeholder="Modèle précis" style="font-size:13px;padding:9px 10px;font-weight:600;">
+            <input type="number" id="piece-annee" placeholder="Année" style="font-size:13px;padding:9px 10px;font-weight:600;">
+          </div>
+        </div>
+        <div class="card">
+          <div class="sec-title">🔩 Pièce recherchée</div>
+          <select id="piece-nom" style="margin-bottom:8px;">
+            <option value="">Type de pièce...</option>
+            <optgroup label="Freinage"><option>Plaquettes de frein avant</option><option>Plaquettes de frein arrière</option><option>Disques de frein avant</option><option>Disques de frein arrière</option><option>Étrier de frein</option><option>Maître cylindre de frein</option></optgroup>
+            <optgroup label="Moteur"><option>Courroie de distribution</option><option>Kit distribution complet</option><option>Joint de culasse</option><option>Pompe à eau</option><option>Alternateur</option><option>Démarreur</option><option>Bobine d'allumage</option><option>Injecteur</option><option>Vanne EGR</option><option>Turbocompresseur</option><option>Compresseur de climatisation</option><option>Courroie accessoires</option></optgroup>
+            <optgroup label="Suspension"><option>Amortisseur avant</option><option>Amortisseur arrière</option><option>Rotule de direction</option><option>Triangle de suspension</option><option>Silent-bloc</option><option>Barre stabilisatrice</option></optgroup>
+            <optgroup label="Transmission"><option>Embrayage complet</option><option>Volant moteur</option><option>Roulement de roue</option><option>Cardan</option><option>Soufflet de cardan</option></optgroup>
+            <optgroup label="Carrosserie"><option>Pare-chocs avant</option><option>Pare-chocs arrière</option><option>Aile avant</option><option>Phare avant</option><option>Feu arrière</option></optgroup>
+            <optgroup label="Électronique"><option>Batterie</option><option>Capteur ABS</option><option>Sonde lambda</option><option>Calculateur moteur</option></optgroup>
+            <option>Autre (saisie libre)</option>
+          </select>
+          <div id="piece-custom-wrap" style="display:none;margin-top:8px;">
+            <input type="text" id="piece-custom" placeholder="Décrivez la pièce...">
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="rechercherPieces2()">🔍 Comparer les prix</button>
+        <div id="pieces-list" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- COMPARER -->
+    <div class="screen" id="screen-comparer">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <button class="btn-back" onclick="showTab('accueil')">← Retour</button>
+          <span class="section-title">Comparer des devis</span>
+        </div>
+        <div id="devis-list"></div>
+        <button class="btn-add" id="btn-add" onclick="addDevis()">+ Ajouter un garage</button>
+        <button class="btn btn-green" onclick="comparerDevis()">⚖️ Comparer avec l'IA</button>
+        <div id="compare-result" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- PREMIUM -->
+    <div class="screen" id="screen-premium">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <button class="btn-back" onclick="showTab('accueil')">← Retour</button>
+          <span class="section-title">Plans & Tarifs</span>
+        </div>
+        <div class="plan-grid">
+          <div class="plan-card"><div class="plan-name">Gratuit</div><div class="plan-price">0€</div><div class="plan-period">pour toujours</div><button class="plan-btn plan-btn-user" onclick="showTab('accueil')">Plan actuel</button></div>
+          <div class="plan-card featured"><div class="plan-badge">⭐ PRO</div><div class="plan-name">Pro</div><div class="plan-price">0€</div><div class="plan-period">/mois</div><button class="plan-btn plan-btn-pro" onclick="switchMode('pro')">Activer Pro</button></div>
+        </div>
+        <div class="card">
+          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Analyses illimitées de devis</div></div>
+          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Export PDF professionnel</div></div>
+          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Scanner devis par photo</div></div>
+          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Comparateur devis illimité</div></div>
+          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Chat Mohamed IA illimité</div></div>
+          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Prix pièces tous fournisseurs</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARNAQUES -->
+    <div class="screen" id="screen-arnaques">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <button class="btn-back" onclick="showTab('accueil')">← Retour</button>
+          <span class="section-title">Arnaques fréquentes</span>
+        </div>
+        <div id="arnaques-list"></div>
+      </div>
+    </div>
+
+    <!-- JEUNE CONDUCTEUR -->
+    <div class="screen" id="screen-jeune">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <button class="btn-back" onclick="showTab('monauto')">← Retour</button>
+          <span class="section-title">Jeune Conducteur</span>
+        </div>
+        <div id="jeune-content"></div>
+      </div>
+    </div>
+
+    <!-- ANNONCE -->
+    <div class="screen" id="screen-annonce">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <button class="btn-back" onclick="showTab('accueil')">← Retour</button>
+          <span class="section-title">Analyser une annonce</span>
+        </div>
+        <div class="card">
+          <div class="sec-title">📋 Infos de l'annonce</div>
+          <input type="text" id="ann-vehicule" placeholder="Véhicule (ex: Peugeot 308 2015)" style="margin-bottom:10px;">
+          <input type="number" id="ann-prix" placeholder="Prix demandé (€)" style="margin-bottom:10px;">
+          <input type="number" id="ann-km" placeholder="Kilométrage" style="margin-bottom:10px;">
+          <textarea id="ann-desc" placeholder="Description de l'annonce..." rows="4"></textarea>
+        </div>
+        <div class="row2" style="margin-bottom:16px;">
+          <label class="photobtn">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Photo annonce
+            <input type="file" accept="image/*" onchange="scanAnnonce(this)" style="display:none;">
+          </label>
+          <button class="btn btn-green" onclick="analyserAnnonce()">🔍 Analyser</button>
+        </div>
+        <div id="ann-result"></div>
+      </div>
+    </div>
+
+    <!-- QR CODE -->
+    <div class="screen" id="screen-qrcode">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <button class="btn-back" onclick="showTab('monauto')">← Retour</button>
+          <span class="section-title">QR Code Mécanicien</span>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div id="qr-vehicule-info" style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--m);">Remplissez Mon véhicule d'abord</div>
+          <div id="qr-container" style="display:flex;justify-content:center;margin-bottom:16px;"></div>
+          <div id="qr-preview-data" style="text-align:left;font-size:13px;line-height:2;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGIN / INSCRIPTION -->
+    <div class="screen" id="screen-login">
+      <div style="padding-top:24px;">
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--b),#3730D4);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;">🔧</div>
+          <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:4px;">Espace Mécanicien</div>
+          <div style="font-size:13px;color:var(--m);">Connecte-toi pour accéder à ton espace Pro</div>
+        </div>
+        <!-- Onglets Connexion / Inscription -->
+        <div style="display:flex;background:rgba(0,0,0,0.06);border-radius:12px;padding:3px;margin-bottom:20px;gap:2px;">
+          <button id="tab-login" onclick="switchAuthTab('login')" style="flex:1;padding:9px;border:none;background:#fff;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--t);cursor:pointer;box-shadow:var(--shadow-sm);">Se connecter</button>
+          <button id="tab-inscrire" onclick="switchAuthTab('inscrire')" style="flex:1;padding:9px;border:none;background:transparent;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--m);cursor:pointer;">S'inscrire</button>
+        </div>
+        <!-- Formulaire connexion -->
+        <div id="form-login" class="card">
+          <div class="field"><label class="lbl">Email</label><input type="email" id="login-email" placeholder="garage@exemple.fr" autocomplete="email"></div>
+          <div class="field"><label class="lbl">Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
+          <div id="login-error" style="display:none;color:var(--r);font-size:13px;font-weight:600;margin-bottom:10px;"></div>
+          <button class="btn btn-pro" onclick="doLogin()" id="btn-login">Se connecter</button>
+        </div>
+        <!-- Formulaire inscription -->
+        <div id="form-inscrire" class="card" style="display:none;">
+          <div class="field"><label class="lbl">Nom du garage</label><input type="text" id="inscrire-nom" placeholder="Garage Dupont"></div>
+          <div class="field"><label class="lbl">Email</label><input type="email" id="inscrire-email" placeholder="garage@exemple.fr" autocomplete="email"></div>
+          <div class="field"><label class="lbl">Mot de passe</label><input type="password" id="inscrire-password" placeholder="Minimum 6 caractères" autocomplete="new-password"></div>
+          <div id="inscrire-error" style="display:none;color:var(--r);font-size:13px;font-weight:600;margin-bottom:10px;"></div>
+          <button class="btn btn-pro" onclick="doInscrire()" id="btn-inscrire">Créer mon compte</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRO HOME -->
+    <div class="screen" id="screen-pro">
+      <div style="padding-top:16px;">
+        <div class="hero" style="background:linear-gradient(135deg,var(--b),var(--bd));color:#fff;">
+          <div class="hero-content">
+            <div class="hero-eyebrow">🔧 Mode Professionnel</div>
+            <div class="hero-title">Outils Garagiste</div>
+            <div class="hero-sub">Créez des devis, diagnostiquez, gérez votre atelier</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;background:rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;">
+              <div id="pro-user-info"><div style="font-size:12px;color:rgba(255,255,255,0.7);">Chargement...</div></div>
+              <button onclick="doDeconnexion()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Déconnexion</button>
+            </div>
+          </div>
+        </div>
+        <div class="pro-grid">
+          <div class="pro-tool-card" onclick="showProTab('devis-builder')"><div class="ptc-icon" style="background:var(--gl);">📄</div><div class="ptc-title">Créer un devis PDF</div><div class="ptc-sub">Devis pro personnalisé</div></div>
+          <div class="pro-tool-card" onclick="showProTab('diagnostic')"><div class="ptc-icon" style="background:var(--bl);">🧠</div><div class="ptc-title">Diagnostic IA</div><div class="ptc-sub">Symptômes → panne</div></div>
+          <div class="pro-tool-card" onclick="showProTab('obd2')"><div class="ptc-icon" style="background:var(--ol);">📟</div><div class="ptc-title">Codes OBD</div><div class="ptc-sub">Décodage erreurs moteur</div></div>
+          <div class="pro-tool-card" onclick="showProTab('fiche-garage')"><div class="ptc-icon" style="background:var(--ol);">🪪</div><div class="ptc-title">Ma fiche garage</div><div class="ptc-sub">Crée ta fiche pub avec l'IA + QR code</div></div>
+  
+        </div>
+      </div>
+    </div>
+<!-- FICHE GARAGE -->
+<div class="screen" id="screen-fiche-garage">
+  <div style="padding-top:16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button class="btn-back" onclick="showTab('pro')">← Retour</button><span class="section-title">🪪 Ma fiche garage</span></div>
+    <div id="fg-form">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">🏠 Infos de base</div><input type="text" id="fg-nom" placeholder="Nom du garage"><input type="text" id="fg-adresse" placeholder="Adresse complète (ex: 14 rue de la Paix, 69007 Lyon)"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><input type="text" id="fg-tel" placeholder="Téléphone"><input type="text" id="fg-email" placeholder="Email (optionnel)"></div></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">🕐 Horaires</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><input type="text" id="fg-h-sem" placeholder="Lun–Ven (ex: 8h–18h)"><input type="text" id="fg-h-sam" placeholder="Samedi (ex: 9h–13h)"></div><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" id="fg-dim" style="width:16px;height:16px;"> Ouvert le dimanche</label></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">🌍 Langues parlées</div><div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="fg-chip" data-v="Français" onclick="fgToggle(this)"style="color:var(--t)">Français</span><span class="fg-chip" data-v="Arabe" onclick="fgToggle(this)"style="color:var(--t)">Arabe</span><span class="fg-chip" data-v="Anglais" onclick="fgToggle(this)"style="color:var(--t)">Anglais</span><span class="fg-chip" data-v="Espagnol" onclick="fgToggle(this)"style="color:var(--t)">Espagnol</span><span class="fg-chip" data-v="Portugais" onclick="fgToggle(this)"style="color:var(--t)">Portugais</span><span class="fg-chip" data-v="Turc" onclick="fgToggle(this)"style="color:var(--t)">Turc</span></div></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">💶 Tarifs indicatifs</div><div id="fg-tarifs"><div class="fg-tarif-row" style="display:grid;grid-template-columns:1fr auto;gap:8px;"><input type="text" placeholder="Ex: Vidange"><input type="text" placeholder="29€" style="width:70px;"></div></div><button class="btn-add" onclick="fgAjouterTarif()">+ Ajouter un tarif</button></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"><div class="sec-title">✍️ Description & spécialités</div><textarea id="fg-desc" rows="4" placeholder="Ex: Garage familial depuis 10 ans, tarifs honnêtes, devis gratuit..." style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;resize:vertical;"></textarea><div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="fg-chip" data-v="Vidange" onclick="fgToggle(this)"style="color:var(--t)">Vidange</span><span class="fg-chip" data-v="Freins" onclick="fgToggle(this)"style="color:var(--t)">Freins</span><span class="fg-chip" data-v="Pneus" onclick="fgToggle(this)"style="color:var(--t)">Pneus</span><span class="fg-chip" data-v="Climatisation" onclick="fgToggle(this)"style="color:var(--t)">Climatisation</span><span class="fg-chip" data-v="Carrosserie" onclick="fgToggle(this)"style="color:var(--t)">Carrosserie</span><span class="fg-chip" data-v="Diagnostic" onclick="fgToggle(this)"style="color:var(--t)">Diagnostic</span><span class="fg-chip" data-v="Révision" onclick="fgToggle(this)"style="color:var(--t)">Révision</span><span class="fg-chip" data-v="Électricité" onclick="fgToggle(this)"style="color:var(--t)">Électricité</span></div><input type="text" id="fg-delai" placeholder="Délai moyen (ex: le jour même, sous 24h...)"></div>
+      <button class="btn btn-pro" onclick="fgGenerer()" style="width:100%;margin-bottom:16px;">✨ Générer ma fiche avec l'IA</button>
+    </div>
+    <div id="fg-loading" style="display:none;text-align:center;padding:40px 0;"><div style="font-size:32px;animation:spin 1s linear infinite;">⚙️</div><p style="color:var(--muted);margin-top:12px;">L'IA génère ta fiche...</p></div>
+    <div id="fg-result" style="display:none;">
+      <button class="btn-back" onclick="document.getElementById('fg-result').style.display='none';document.getElementById('fg-form').style.display='block';" style="margin-bottom:12px;">← Modifier</button>
+      <div style="border-radius:20px;overflow:hidden;border:1px solid #d4af37;">
+  <div style="background:#0f0f0f;padding:24px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;border:1px solid rgba(212,175,55,0.15);pointer-events:none;"></div>
+    <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;border:1px solid rgba(212,175,55,0.1);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:10px;right:20px;opacity:0.06;font-size:80px;line-height:1;pointer-events:none;">⚙</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="fg-avatar" style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#f0d060);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#0f0f0f;">G</div>
+        <div>
+          <div id="fg-card-nom" style="font-size:17px;font-weight:500;color:#f5f0e0;line-height:1.2;"></div>
+          <div id="fg-card-adresse" style="font-size:12px;color:#d4af37;margin-top:2px;"></div>
+        </div>
+      </div>
+      <div style="background:rgba(212,175,55,0.15);border:0.5px solid rgba(212,175,55,0.4);border-radius:8px;padding:4px 8px;text-align:center;">
+        <div style="font-size:9px;color:#d4af37;letter-spacing:0.05em;">VÉRIFIÉ</div>
+        <div style="font-size:9px;color:rgba(212,175,55,0.7);">MécanoCheck</div>
+      </div>
+    </div>
+    <div id="fg-card-accroche" style="font-size:13px;color:rgba(245,240,224,0.8);font-style:italic;line-height:1.6;border-left:2px solid #d4af37;padding-left:12px;margin-bottom:16px;"></div>
+    <div id="fg-card-points" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+  <div id="fg-card-tags" style="background:#161616;padding:12px 24px;display:flex;flex-wrap:wrap;gap:6px;border-top:0.5px solid rgba(212,175,55,0.2);border-bottom:0.5px solid rgba(212,175,55,0.2);"></div>
+  <div id="fg-card-tarifs" style="background:#141414;padding:14px 24px;border-bottom:0.5px solid rgba(212,175,55,0.2);">
+    <div style="font-size:10px;font-weight:500;color:#d4af37;letter-spacing:0.08em;margin-bottom:8px;">TARIFS INDICATIFS</div>
+    <div id="fg-card-tarifs-list"></div>
+  </div>
+  <div style="background:#0f0f0f;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="font-size:12px;color:rgba(245,240,224,0.6);">🕐 <span id="fg-card-horaires"></span></div>
+      <div style="font-size:12px;color:rgba(245,240,224,0.6);">📞 <span id="fg-card-tel"></span></div>
+      <div id="fg-card-email-row" style="display:none;font-size:12px;color:rgba(245,240,224,0.6);">✉️ <span id="fg-card-email"></span></div>
+      <div style="font-size:12px;color:rgba(245,240,224,0.6);">🌍 <span id="fg-card-langues"></span></div>
+      <div id="fg-card-delai-row" style="display:none;font-size:12px;color:rgba(245,240,224,0.6);">⚡ <span id="fg-card-delai"></span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div id="fg-qr" style="width:60px;height:60px;border-radius:6px;overflow:hidden;"></div>
+      <div style="font-size:9px;color:rgba(212,175,55,0.6);">Scanner</div>
+    </div>
+  </div>
+  <div style="background:#0a0a0a;padding:8px 24px;display:flex;justify-content:center;border-top:0.5px solid rgba(212,175,55,0.15);">
+    <div style="font-size:10px;color:rgba(212,175,55,0.4);">⚙ MécanoCheck — Garage certifié</div>
+  </div>
+</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+        <button class="btn btn-pro" onclick="fgQRCode()">🔲 QR Code</button>
+        <button class="btn" onclick="fgPartager()">📤 Partager</button>
+      </div>
+      <div id="fg-qr-container" style="display:none;margin-top:12px;" class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">Ton QR code :</div><div id="fg-qr" style="display:flex;justify-content:center;"></div><p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Fais scanner ce QR à tes clients</p></div>
+    </div>
+  </div>
+</div>
+    <!-- DEVIS BUILDER -->
+    <div class="screen" id="screen-devis-builder">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button class="btn-back" onclick="showTab('pro')">← Retour</button><span class="section-title">Créer un devis PDF</span></div>
+        <div class="card"><div class="sec-title">🏪 Garage</div><input type="text" id="db-garage" placeholder="Nom du garage" style="margin-bottom:8px;"><input type="text" id="db-adresse" placeholder="Adresse" style="margin-bottom:8px;"><input type="tel" id="db-tel" placeholder="Téléphone"></div>
+        <div class="card"><div class="sec-title">🚗 Client & Véhicule</div><input type="text" id="db-client" placeholder="Nom du client" style="margin-bottom:8px;"><input type="text" id="db-vehicule" placeholder="Véhicule (marque, modèle, année)" style="margin-bottom:8px;"><input type="text" id="db-immat" placeholder="Immatriculation" style="margin-bottom:8px;"><input type="number" id="db-km" placeholder="Kilométrage"></div>
+        <div class="card"><div class="sec-title">🔩 Prestations</div><div id="devis-lines"></div><button class="btn-add" onclick="addDevisLine()">+ Ajouter une prestation</button><div class="devis-total-bar"><span class="dtl-label">Total TTC</span><span class="dtl-amount" id="devis-total">0,00 €</span></div></div>
+        <button class="btn btn-pro" onclick="genererDevisPDF()" style="margin-bottom:16px;">📄 Générer le PDF</button>
+      </div>
+    </div>
+
+    <!-- DIAG PRO -->
+    <div class="screen" id="screen-diag-pro">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button class="btn-back" onclick="showTab('pro')">← Retour</button><span class="section-title">Diagnostic IA Pro</span></div>
+        <div class="card"><div class="sec-title">🚗 Véhicule</div><input type="text" id="diag-vehicule" placeholder="Marque, modèle, année, motorisation" style="margin-bottom:8px;"><input type="number" id="diag-km" placeholder="Kilométrage"></div>
+        <div class="card"><div class="sec-title">⚠️ Symptômes</div><textarea id="diag-symptomes" placeholder="Décrivez précisément les symptômes..." rows="4"></textarea></div>
+        <button class="btn btn-pro" onclick="lancerDiagPro()" style="margin-bottom:16px;">🧠 Diagnostiquer</button>
+        <div id="diag-pro-result"></div>
+      </div>
+    </div>
+
+    <!-- OBD -->
+    <div class="screen" id="screen-obd">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button class="btn-back" onclick="showTab('pro')">← Retour</button><span class="section-title">Codes OBD / DTC</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;"><input type="text" id="obd-search" placeholder="Ex: P0301, P0420..." onkeydown="if(event.key==='Enter')searchOBD()"><button class="btn btn-sm btn-pro" onclick="searchOBD()">🔍</button></div>
+        <div id="obd-list"></div>
+      </div>
+    </div>
+
+    <!-- VOYANTS -->
+    <div class="screen" id="screen-voyants">
+      <div style="padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><button class="btn-back" onclick="showTab('pro')">← Retour</button><span class="section-title">Voyants tableau de bord</span></div>
+        <div class="voyant-grid" id="voyants-grid"></div>
+      </div>
+    </div>
+
+  </div><!-- end scroll-area -->
+
+  <!-- BOTTOM NAV CONDUCTEUR -->
+  <nav class="bnav" id="bnav-conducteur">
+    <button class="ni active" id="ni-accueil" onclick="showTab('accueil')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Accueil
+    </button>
+    <button class="ni" id="ni-analyser" onclick="showTab('analyser')">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Analyser
+    </button>
+    <button class="ni" id="ni-garages" onclick="showTab('garages')">
+      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Garages
+    </button>
+    <button class="ni" id="ni-monauto" onclick="showTab('monauto')">
+      <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5"/><circle cx="16" cy="19" r="2"/><circle cx="7" cy="19" r="2"/><path d="M14 17H9"/></svg>Mon auto
+    </button>
+    <button class="ni" id="ni-profil" onclick="showTab('profil')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil
+    </button>
+  </nav>
+
+  <!-- BOTTOM NAV PRO -->
+  <nav class="bnav" id="bnav-pro" style="display:none;">
+    <button class="ni active-pro" id="ni-pro" onclick="showProTab('pro')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Accueil
+    </button>
+    <button class="ni" id="ni-devis-builder" onclick="showProTab('devis-builder')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Devis
+    </button>
+    <button class="ni" id="ni-diag-pro" onclick="showProTab('diagnostic')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Diagnostic
+    </button>
+    <button class="ni" id="ni-obd" onclick="showProTab('obd2')">
+      <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>OBD
+    </button>
+  </nav>
+
+  <!-- MODAL REPARATION -->
+  <div id="rep-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:flex-end;">
+    <div style="background:var(--card);border-radius:24px 24px 0 0;padding:24px 20px;width:100%;max-width:430px;margin:0 auto;">
+      <div style="font-size:16px;font-weight:800;margin-bottom:16px;">➕ Nouvelle réparation</div>
+      <div class="field"><label class="lbl">Type d'intervention</label>
+        <select id="rep-type"><option value="">Sélectionner...</option><option>Vidange huile + filtre</option><option>Remplacement plaquettes de frein</option><option>Remplacement disques de frein</option><option>Remplacement pneus</option><option>Courroie de distribution</option><option>Embrayage</option><option>Climatisation</option><option>Batterie</option><option>Amortisseurs</option><option>Autre intervention</option></select>
+      </div>
+      <div class="field"><label class="lbl">Description</label><textarea id="rep-desc" rows="2" placeholder="Détails..."></textarea></div>
+      <div class="row2">
+        <div class="field"><label class="lbl">Date</label><input type="date" id="rep-date"></div>
+        <div class="field"><label class="lbl">Kilométrage</label><input type="number" id="rep-km" placeholder="85000"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label class="lbl">Coût (€)</label><input type="number" id="rep-cout" placeholder="350"></div>
+        <div class="field"><label class="lbl">Garage</label><input type="text" id="rep-garage" placeholder="Garage Dupont"></div>
+      </div>
+      <button class="btn btn-green" onclick="sauvegarderReparation()" style="margin-bottom:10px;">Enregistrer</button>
+      <button onclick="fermerModalRep()" style="width:100%;background:none;border:none;color:var(--m);font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;padding:10px;">Annuler</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+const PROXY_URL='https://function-bun-production-c4fc.up.railway.app/api/claude';
+const API_KEY='proxy';
+const MAX_FREE=999;
+const LOADING_MSGS=['Vérification des prix du marché...','Analyse du diagnostic...','Calcul de la main d\'oeuvre...','Comparaison avec votre véhicule...'];
+let currentMode='conducteur',currentTab='accueil',currentResult=null,currentEntry=null;
+let chatHistory=[],isRecording=false,recognition=null,isSpeaking=false;
+let devisCount=1,leafletMap=null,leafletMarkers=[],currentFiltre='car_repair',deferredPrompt=null;
+
+const MODELS={"Renault":["Clio 2 1.2 60ch","Clio 2 1.4 75ch","Clio 2 1.6 90ch","Clio 2 1.5 dCi 65ch","Clio 2 1.5 dCi 80ch","Clio 3 1.2 75ch","Clio 3 1.2 TCe 100ch","Clio 3 1.4 98ch","Clio 3 1.6 110ch","Clio 3 1.5 dCi 70ch","Clio 3 1.5 dCi 85ch","Clio 3 1.5 dCi 105ch","Clio 4 0.9 TCe 75ch","Clio 4 0.9 TCe 90ch","Clio 4 1.2 TCe 120ch","Clio 4 1.5 dCi 75ch","Clio 4 1.5 dCi 90ch","Clio 4 1.6 RS 200ch","Clio 5 1.0 SCe 65ch","Clio 5 1.0 TCe 90ch","Clio 5 1.0 TCe 100ch","Clio 5 1.3 TCe 130ch","Clio 5 1.5 dCi 85ch","Clio 5 E-Tech 140ch","Mégane 2 1.4 98ch","Mégane 2 1.6 115ch","Mégane 2 2.0 135ch","Mégane 2 1.5 dCi 80ch","Mégane 2 1.5 dCi 100ch","Mégane 2 1.9 dCi 120ch","Mégane 3 1.2 TCe 115ch","Mégane 3 1.4 TCe 130ch","Mégane 3 1.6 110ch","Mégane 3 2.0 TCe 265ch RS","Mégane 3 1.5 dCi 85ch","Mégane 3 1.5 dCi 110ch","Mégane 3 1.9 dCi 130ch","Mégane 4 1.2 TCe 100ch","Mégane 4 1.3 TCe 115ch","Mégane 4 1.3 TCe 140ch","Mégane 4 1.6 TCe 205ch RS","Mégane 4 1.5 dCi 90ch","Mégane 4 1.5 dCi 110ch","Laguna 2 1.6 107ch","Laguna 2 2.0 135ch","Laguna 2 1.9 dCi 120ch","Laguna 3 2.0 140ch","Laguna 3 1.5 dCi 110ch","Laguna 3 2.0 dCi 150ch","Scénic 2 1.6 115ch","Scénic 2 1.5 dCi 100ch","Scénic 3 1.4 TCe 130ch","Scénic 3 1.5 dCi 110ch","Scénic 4 1.2 TCe 115ch","Scénic 4 1.3 TCe 140ch","Scénic 4 1.5 dCi 110ch","Captur 1 0.9 TCe 90ch","Captur 1 1.2 TCe 120ch","Captur 1 1.5 dCi 90ch","Captur 2 1.0 TCe 100ch","Captur 2 1.3 TCe 130ch","Captur 2 E-Tech 145ch","Kadjar 1.2 TCe 130ch","Kadjar 1.3 TCe 140ch","Kadjar 1.5 dCi 110ch","Kangoo 2 1.5 dCi 75ch","Kangoo 2 1.5 dCi 90ch","Kangoo 3 1.3 TCe 100ch","Kangoo 3 1.5 dCi 95ch","Twingo 2 1.2 75ch","Twingo 2 1.2 TCe 100ch","Twingo 3 0.9 TCe 70ch","Twingo 3 0.9 TCe 90ch","Zoe R75","Zoe R110","Zoe R135 ZE50","Logan 2 0.9 TCe 90ch","Logan 2 1.5 dCi 90ch","Sandero 2 0.9 TCe 90ch","Sandero 2 1.5 dCi 90ch","Sandero 3 1.0 TCe 90ch","Sandero 3 1.0 TCe 100ch","Talisman 1.3 TCe 140ch","Talisman 1.5 dCi 110ch","Austral 1.2 TCe 130ch","Austral E-Tech 200ch","Arkana 1.3 TCe 140ch","Arkana E-Tech 145ch"],"Peugeot":["206 1.1 60ch","206 1.4 75ch","206 1.6 110ch","206 1.4 HDi 70ch","206 2.0 HDi 90ch","207 1.4 75ch","207 1.4 VTi 95ch","207 1.6 VTi 120ch","207 1.6 THP 150ch","207 1.4 HDi 70ch","207 1.6 HDi 90ch","207 1.6 HDi 110ch","208 1 1.0 VTi 68ch","208 1 1.2 VTi 82ch","208 1 1.4 VTi 95ch","208 1 1.6 THP 156ch","208 1 1.4 HDi 68ch","208 1 1.6 HDi 92ch","208 2 1.2 PureTech 75ch","208 2 1.2 PureTech 100ch","208 2 1.2 PureTech 130ch","208 2 1.5 BlueHDi 100ch","208 2 e-208 136ch","307 1.4 75ch","307 1.6 110ch","307 2.0 138ch","307 1.6 HDi 90ch","307 2.0 HDi 110ch","308 1 1.4 VTi 95ch","308 1 1.6 VTi 120ch","308 1 1.6 THP 140ch","308 1 1.6 HDi 90ch","308 1 1.6 HDi 110ch","308 2 1.2 PureTech 110ch","308 2 1.2 PureTech 130ch","308 2 1.6 THP 205ch GTi","308 2 1.5 BlueHDi 100ch","308 2 1.5 BlueHDi 130ch","308 3 1.2 PureTech 110ch","308 3 1.2 PureTech 130ch","308 3 1.5 BlueHDi 130ch","308 3 e-308 156ch","508 1 1.6 THP 156ch","508 1 2.0 THP 240ch","508 1 1.6 HDi 112ch","508 1 2.0 HDi 140ch","508 2 1.5 PureTech 180ch","508 2 1.6 PureTech 225ch","508 2 1.5 BlueHDi 130ch","2008 1 1.2 PureTech 82ch","2008 1 1.2 PureTech 110ch","2008 1 1.6 HDi 92ch","2008 2 1.2 PureTech 100ch","2008 2 1.2 PureTech 130ch","2008 2 1.5 BlueHDi 110ch","2008 2 e-2008 136ch","3008 1 1.2 PureTech 130ch","3008 1 1.6 THP 165ch","3008 1 2.0 BlueHDi 150ch","3008 2 1.2 PureTech 130ch","3008 2 1.5 BlueHDi 130ch","3008 2 Hybrid 225ch","5008 1 1.6 THP 156ch","5008 1 2.0 HDi 150ch","5008 2 1.2 PureTech 130ch","5008 2 1.5 BlueHDi 130ch","Rifter 1.2 PureTech 110ch","Rifter 1.5 BlueHDi 100ch"],"Citroën":["C1 1 1.0 68ch","C1 1 1.4 HDi 54ch","C1 2 1.0 VTi 68ch","C1 2 1.2 VTi 82ch","C2 1.1 60ch","C2 1.4 75ch","C2 1.6 110ch","C2 1.4 HDi 70ch","C3 1 1.1 60ch","C3 1 1.4 75ch","C3 1 1.6 110ch","C3 1 1.4 HDi 70ch","C3 2 1.0 68ch","C3 2 1.2 VTi 82ch","C3 2 1.4 VTi 95ch","C3 2 1.4 HDi 70ch","C3 2 1.6 HDi 92ch","C3 3 1.2 PureTech 68ch","C3 3 1.2 PureTech 82ch","C3 3 1.2 PureTech 110ch","C3 3 1.5 BlueHDi 75ch","C3 3 1.5 BlueHDi 100ch","C3 Aircross 1.2 PureTech 110ch","C3 Aircross 1.2 PureTech 130ch","C3 Aircross 1.5 BlueHDi 100ch","C4 1 1.4 75ch","C4 1 1.6 110ch","C4 1 1.6 HDi 92ch","C4 2 1.2 PureTech 130ch","C4 2 1.6 THP 155ch","C4 2 1.5 BlueHDi 100ch","C4 Picasso 1.2 PureTech 130ch","C4 Picasso 1.6 HDi 110ch","C4 Cactus 1.2 PureTech 82ch","C4 Cactus 1.2 PureTech 110ch","C4 Cactus 1.5 BlueHDi 100ch","C5 2 1.6 THP 155ch","C5 2 1.6 HDi 110ch","C5 Aircross 1.2 PureTech 130ch","C5 Aircross 1.5 BlueHDi 130ch","C5 Aircross Hybrid 225ch","Xsara Picasso 1.6 110ch","Xsara Picasso 1.6 HDi 92ch","Berlingo 2 1.6 VTi 95ch","Berlingo 2 1.6 HDi 90ch","Berlingo 3 1.2 PureTech 110ch","Berlingo 3 1.5 BlueHDi 100ch","ë-C3 136ch","ë-C4 136ch"],"Volkswagen":["Golf 4 1.4 75ch","Golf 4 1.6 100ch","Golf 4 1.8 T 150ch","Golf 4 1.9 TDI 90ch","Golf 4 1.9 TDI 115ch","Golf 5 1.4 75ch","Golf 5 1.4 TSI 122ch","Golf 5 2.0 GTI 200ch","Golf 5 1.9 TDI 105ch","Golf 5 2.0 TDI 140ch","Golf 6 1.2 TSI 85ch","Golf 6 1.4 TSI 122ch","Golf 6 2.0 GTI 210ch","Golf 6 1.6 TDI 105ch","Golf 6 2.0 TDI 140ch","Golf 7 1.2 TSI 85ch","Golf 7 1.4 TSI 125ch","Golf 7 1.4 TSI 150ch","Golf 7 2.0 GTI 230ch","Golf 7 1.6 TDI 105ch","Golf 7 2.0 TDI 150ch","Golf 8 1.0 TSI 110ch","Golf 8 1.5 TSI 130ch","Golf 8 2.0 GTI 245ch","Golf 8 2.0 TDI 150ch","Golf 8 GTE 245ch","Polo 4 1.2 64ch","Polo 4 1.4 85ch","Polo 4 1.9 TDI 100ch","Polo 5 1.2 60ch","Polo 5 1.2 TSI 105ch","Polo 5 1.6 TDI 90ch","Polo 6 1.0 MPI 65ch","Polo 6 1.0 TSI 95ch","Polo 6 1.0 TSI 115ch","Polo 6 2.0 GTI 200ch","Polo 6 1.6 TDI 95ch","Passat B6 1.6 102ch","Passat B6 1.8 TSI 160ch","Passat B6 2.0 TDI 140ch","Passat B7 1.4 TSI 122ch","Passat B7 2.0 TDI 140ch","Passat B8 1.4 TSI 125ch","Passat B8 2.0 TSI 220ch","Passat B8 2.0 TDI 150ch","Passat B8 GTE 218ch","Tiguan 1 1.4 TSI 122ch","Tiguan 1 2.0 TDI 140ch","Tiguan 2 1.5 TSI 150ch","Tiguan 2 2.0 TDI 150ch","T-Roc 1.0 TSI 115ch","T-Roc 1.5 TSI 150ch","T-Roc 2.0 TDI 150ch","ID.3 45 kWh 150ch","ID.3 58 kWh 150ch","ID.3 77 kWh 204ch","ID.4 52 kWh 148ch","ID.4 77 kWh 204ch"],"Ford":["Fiesta 5 1.25 82ch","Fiesta 5 1.4 97ch","Fiesta 5 1.4 TDCi 68ch","Fiesta 6 1.25 82ch","Fiesta 6 1.6 120ch","Fiesta 6 ST 182ch","Fiesta 6 1.6 TDCi 95ch","Fiesta 7 1.0 EcoBoost 95ch","Fiesta 7 1.0 EcoBoost 100ch","Fiesta 7 1.0 EcoBoost 125ch","Fiesta 7 ST 200ch","Fiesta 7 1.5 TDCi 85ch","Focus 1 1.4 75ch","Focus 1 1.6 100ch","Focus 1 1.8 TDCi 100ch","Focus 2 1.4 80ch","Focus 2 1.6 100ch","Focus 2 2.0 145ch","Focus 2 ST 225ch","Focus 2 1.6 TDCi 90ch","Focus 2 2.0 TDCi 136ch","Focus 3 1.0 EcoBoost 100ch","Focus 3 1.0 EcoBoost 125ch","Focus 3 ST 250ch","Focus 3 1.5 TDCi 95ch","Focus 3 2.0 TDCi 150ch","Focus 4 1.0 EcoBoost 100ch","Focus 4 1.5 EcoBoost 150ch","Focus 4 ST 280ch","Focus 4 1.5 EcoBlue 120ch","Mondeo 3 1.8 125ch","Mondeo 3 2.0 TDCi 130ch","Mondeo 4 2.0 EcoBoost 203ch","Mondeo 4 2.0 TDCi 140ch","Puma 1.0 EcoBoost 125ch","Puma 1.0 EcoBoost 155ch","Puma ST 200ch","Kuga 1 1.6 EcoBoost 150ch","Kuga 1 2.0 TDCi 140ch","Kuga 2 1.5 EcoBoost 150ch","Kuga 2 2.0 TDCi 150ch","EcoSport 1.0 EcoBoost 125ch","EcoSport 1.5 TDCi 95ch"],"Toyota":["Yaris 2 1.0 VVT-i 69ch","Yaris 2 1.3 VVT-i 87ch","Yaris 2 1.4 D-4D 90ch","Yaris 3 1.0 VVT-i 69ch","Yaris 3 Hybrid 100ch","Yaris 3 1.4 D-4D 90ch","Yaris 4 1.5 Hybrid 116ch","Yaris 4 1.5 VVT-i 125ch","Auris 1 1.4 97ch","Auris 1 1.6 VVT-i 124ch","Auris 2 1.2 T 116ch","Auris 2 Hybrid 136ch","Auris 2 1.4 D-4D 90ch","Corolla E150 1.6 124ch","Corolla E150 2.0 D-4D 126ch","Corolla E210 1.2 T 116ch","Corolla E210 1.8 Hybrid 122ch","Corolla E210 2.0 Hybrid 184ch","Avensis 2 1.8 129ch","Avensis 2 2.0 D-4D 126ch","Avensis 3 2.0 152ch","Avensis 3 2.0 D-4D 124ch","RAV4 3 2.0 VVT-i 158ch","RAV4 3 2.2 D-4D 150ch","RAV4 4 2.5 Hybrid 197ch","RAV4 5 2.0 175ch","RAV4 5 2.5 Hybrid 218ch","RAV4 5 2.5 Plug-in Hybrid 306ch","C-HR 1.2 T 116ch","C-HR 1.8 Hybrid 122ch","C-HR 2.0 Hybrid 184ch","Prius 3 1.8 Hybrid 136ch","Prius 4 1.8 Hybrid 122ch","Aygo 1 1.0 VVT-i 68ch","Aygo 2 1.0 VVT-i 72ch","Land Cruiser 150 2.8 D-4D 204ch"],"BMW":["Série 1 E87 116i 115ch","Série 1 E87 118i 129ch","Série 1 E87 118d 122ch","Série 1 F20 116i 136ch","Série 1 F20 118i 136ch","Série 1 F20 120i 184ch","Série 1 F20 118d 143ch","Série 1 F40 118i 140ch","Série 1 F40 120i 178ch","Série 1 F40 M135i 306ch","Série 3 E46 316i 115ch","Série 3 E46 318i 143ch","Série 3 E46 320i 150ch","Série 3 E46 318d 115ch","Série 3 E46 320d 150ch","Série 3 E90 316i 122ch","Série 3 E90 318i 143ch","Série 3 E90 320i 170ch","Série 3 E90 320d 163ch","Série 3 E90 330d 231ch","Série 3 F30 316i 136ch","Série 3 F30 320i 184ch","Série 3 F30 328i 245ch","Série 3 F30 318d 143ch","Série 3 F30 320d 184ch","Série 3 G20 318i 156ch","Série 3 G20 320i 184ch","Série 3 G20 330i 258ch","Série 3 G20 318d 150ch","Série 3 G20 320d 190ch","Série 5 E60 520i 170ch","Série 5 E60 525i 218ch","Série 5 E60 520d 163ch","Série 5 E60 530d 231ch","Série 5 F10 520i 184ch","Série 5 F10 528i 245ch","Série 5 F10 520d 184ch","Série 5 F10 530d 258ch","Série 5 G30 520i 184ch","Série 5 G30 530i 252ch","Série 5 G30 520d 190ch","Série 5 G30 530d 286ch","X1 F48 18i 140ch","X1 F48 20i 192ch","X1 F48 18d 150ch","X3 F25 20i 184ch","X3 F25 20d 184ch","X3 G01 20i 184ch","X3 G01 30i 252ch","X3 G01 20d 190ch","X5 E70 30i 272ch","X5 E70 30d 235ch","X5 F15 25d 218ch","X5 F15 30d 258ch","i3 94Ah 170ch","i3s 120Ah 184ch"],"Mercedes-Benz":["Classe A W169 150 95ch","Classe A W169 180 116ch","Classe A W176 160 102ch","Classe A W176 180 122ch","Classe A W176 200 156ch","Classe A W176 AMG 45 360ch","Classe A W176 180 CDI 109ch","Classe A W177 180 136ch","Classe A W177 200 163ch","Classe A W177 AMG 45 S 421ch","Classe A W177 180 d 116ch","Classe B W246 180 122ch","Classe B W246 200 156ch","Classe B W246 180 CDI 109ch","Classe C W203 180 122ch","Classe C W203 220 CDI 143ch","Classe C W204 180 156ch","Classe C W204 200 184ch","Classe C W204 AMG 63 457ch","Classe C W204 220 CDI 170ch","Classe C W205 180 156ch","Classe C W205 200 184ch","Classe C W205 AMG 63 476ch","Classe C W205 220 d 170ch","Classe E W211 200 163ch","Classe E W211 220 CDI 150ch","Classe E W212 200 184ch","Classe E W212 220 CDI 170ch","Classe E W213 200 184ch","Classe E W213 220 194ch","Classe E W213 AMG 63 571ch","Classe E W213 220 d 194ch","GLA 180 122ch","GLA 200 156ch","GLA 200 d 136ch","GLC 200 184ch","GLC 220 d 194ch","GLC 300 de 306ch","CLA 180 122ch","CLA 200 156ch","CLA 180 d 116ch","EQA 250 190ch","EQB 250 190ch","EQC 400 408ch"],"Opel":["Corsa C 1.0 65ch","Corsa C 1.2 75ch","Corsa C 1.3 CDTI 70ch","Corsa D 1.0 65ch","Corsa D 1.2 80ch","Corsa D 1.3 CDTI 75ch","Corsa E 1.0 Turbo 90ch","Corsa E 1.0 Turbo 115ch","Corsa E 1.3 CDTI 75ch","Corsa F 1.2 75ch","Corsa F 1.2 Turbo 100ch","Corsa F 1.2 Turbo 130ch","Astra H 1.4 90ch","Astra H 1.6 115ch","Astra H 1.9 CDTI 120ch","Astra J 1.4 Turbo 120ch","Astra J 1.6 115ch","Astra J 2.0 OPC 280ch","Astra J 1.7 CDTI 110ch","Astra K 1.0 Turbo 105ch","Astra K 1.4 Turbo 125ch","Astra K 1.6 CDTI 110ch","Insignia A 1.6 Turbo 180ch","Insignia A 2.0 CDTI 130ch","Insignia B 1.5 Turbo 140ch","Insignia B 2.0 CDTI 170ch","Mokka 1.4 Turbo 140ch","Mokka X 1.4 Turbo 140ch","Mokka B 1.2 Turbo 100ch","Mokka B 1.2 Turbo 130ch","Grandland 1.2 Turbo 130ch","Grandland Hybrid 225ch","Crossland 1.2 Turbo 110ch","Zafira B 1.6 115ch","Zafira B 1.9 CDTI 120ch","Meriva B 1.4 Turbo 120ch"],"Dacia":["Logan 1 1.4 MPI 75ch","Logan 1 1.6 MPI 90ch","Logan 1 1.5 dCi 70ch","Logan 2 0.9 TCe 90ch","Logan 2 1.0 SCe 75ch","Logan 2 1.5 dCi 90ch","Sandero 1 1.2 75ch","Sandero 1 1.5 dCi 70ch","Sandero 2 0.9 TCe 90ch","Sandero 2 1.5 dCi 90ch","Sandero 3 1.0 TCe 90ch","Sandero 3 1.0 TCe 100ch","Duster 1 1.6 105ch","Duster 1 1.5 dCi 85ch","Duster 1 1.5 dCi 110ch","Duster 2 1.0 TCe 100ch","Duster 2 1.3 TCe 130ch","Duster 2 1.5 dCi 115ch","Lodgy 1.5 dCi 90ch","Lodgy 1.5 dCi 110ch","Dokker 1.5 dCi 90ch","Jogger 1.0 TCe 100ch","Jogger Hybrid 140ch","Spring Electric 33ch","Spring Electric 65ch"],"Audi":["A1 1.2 TFSI 86ch","A1 1.4 TFSI 122ch","A1 1.4 TFSI 185ch S1","A1 1.6 TDI 90ch","A1 1.6 TDI 116ch","A3 8L 1.6 102ch","A3 8L 1.8 T 150ch","A3 8L 1.9 TDI 100ch","A3 8P 1.6 102ch","A3 8P 2.0 TFSI 200ch","A3 8P 1.9 TDI 105ch","A3 8P 2.0 TDI 140ch","A3 8V 1.2 TFSI 105ch","A3 8V 1.4 TFSI 125ch","A3 8V 2.0 TFSI 300ch RS3","A3 8V 1.6 TDI 110ch","A3 8V 2.0 TDI 150ch","A3 8Y 1.0 TFSI 110ch","A3 8Y 1.5 TFSI 150ch","A3 8Y 2.0 TFSI 300ch RS3","A3 8Y 2.0 TDI 150ch","A4 B7 1.8 T 163ch","A4 B7 2.0 TFSI 200ch","A4 B7 1.9 TDI 115ch","A4 B7 2.0 TDI 140ch","A4 B8 1.8 TFSI 120ch","A4 B8 2.0 TFSI 211ch","A4 B8 1.6 TDI 102ch","A4 B8 2.0 TDI 143ch","A4 B9 1.4 TFSI 150ch","A4 B9 2.0 TFSI 190ch","A4 B9 2.0 TDI 150ch","A4 B9 2.0 TDI 190ch","A6 C6 2.0 TFSI 170ch","A6 C6 2.4 177ch","A6 C6 2.0 TDI 140ch","A6 C6 2.7 TDI 190ch","A6 C7 2.0 TFSI 180ch","A6 C7 1.8 TFSI 190ch","A6 C7 2.0 TDI 177ch","A6 C7 3.0 TDI 204ch","Q3 8U 1.4 TFSI 125ch","Q3 8U 2.0 TFSI 170ch","Q3 8U 2.0 TDI 140ch","Q3 F3 1.5 TFSI 150ch","Q3 F3 2.0 TFSI 190ch","Q3 F3 2.0 TDI 150ch","Q5 8R 2.0 TFSI 180ch","Q5 8R 2.0 TDI 143ch","Q5 8R 3.0 TDI 240ch","Q5 FY 2.0 TFSI 252ch","Q5 FY 2.0 TDI 190ch","TT 8J 1.8 TFSI 160ch","TT 8J 2.0 TFSI 200ch","TT FV 1.8 TFSI 180ch","TT FV 2.0 TFSI 230ch"]};
+function showProTab(tab){
+  document.querySelectorAll('#bnav-pro .ni').forEach(n=>n.classList.remove('active','active-pro'));
+  const navMap={'pro':'ni-pro','devis-builder':'ni-devis-builder','diagnostic':'ni-diag-pro','obd2':'ni-obd','fiche-garage':'ni-pro'};
+const el=document.getElementById(navMap[tab]);if(el)el.classList.add('active-pro');
+  const screens={'pro':'screen-pro','devis-builder':'screen-devis-builder','diagnostic':'screen-diag-pro','obd2':'screen-obd','fiche-garage':'screen-fiche-garage'};
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const sc=document.getElementById(screens[tab]);if(sc)sc.classList.add('active');
+  document.querySelector('.scroll-area').scrollTop=0;
+  if(tab==='obd2')renderOBD();
+  if(tab==='fiche-garage')document.getElementById('fg-form').style.display='block';
+}
+// NAVIGATION
+function showTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const screens={'accueil':'screen-accueil','analyser':'screen-analyser','garages':'screen-garages','monauto':'screen-monauto','profil':'screen-profil','chat':'screen-chat','pieces':'screen-pieces','comparer':'screen-comparer','premium':'screen-premium','arnaques':'screen-arnaques','jeune':'screen-jeune','fiche-garage':'screen-fiche-garage','annonce':'screen-annonce','qrcode':'screen-qrcode','pro':'screen-pro','devis-builder':'screen-devis-builder','diag-pro':'screen-diag-pro','obd':'screen-obd','voyants':'screen-voyants'};
+  const el=document.getElementById(screens[tab]||'screen-accueil');
+  if(el)el.classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active','active-pro'));
+  const navMap={'accueil':'ni-accueil','analyser':'ni-analyser','garages':'ni-garages','monauto':'ni-monauto','profil':'ni-profil','pro':'ni-pro','devis-builder':'ni-devis-builder','diag-pro':'ni-diag-pro','obd':'ni-obd','voyants':'ni-voyants','fiche-garage':'ni-pro'};
+  const ni=document.getElementById(navMap[tab]);
+  if(ni)ni.classList.add(currentMode==='pro'?'active-pro':'active');
+  if(tab==='garages')initMapIfNeeded();
+  if(tab==='arnaques')renderArnaques();
+  if(tab==='jeune')renderJeune();
+  if(tab==='obd')renderOBD();
+  if(tab==='voyants')renderVoyants();
+  if(tab==='qrcode')genererQR();
+  if(tab==='comparer')initComparateur();
+  if(tab==='devis-builder')initDevisBuilder();
+  if(tab==='monauto')loadWallet();
+  if(tab==='accueil')updateAccueil();
+  if(tab==='pieces')initPieces();if(tab==='fiche-garage')document.getElementById('fg-form').style.display='block';
+  document.querySelector('.scroll-area').scrollTop=0;
+}
+
+function showSubScreen(name){
+  ['home','loading','result'].forEach(n=>{const el=document.getElementById('sub-'+n);if(el)el.style.display='none';});
+  const el=document.getElementById('sub-'+name);
+  if(el)el.style.display=name==='loading'?'flex':'block';
+}
+
+function switchMode(mode){
+  if(mode==='pro' && !window._currentUser){
+    // Pas connecté → aller au login
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-login').classList.add('active');
+    document.querySelector('.scroll-area').scrollTop=0;
+    return;
+  }
+  currentMode=mode;
+  document.getElementById('mode-conducteur').className='mode-btn'+(mode==='conducteur'?' active':'');
+document.getElementById('mode-pro').className='mode-btn'+(mode==='pro'?' active-pro':'');
+  document.getElementById('bnav-conducteur').style.display=mode==='conducteur'?'flex':'none';
+  document.getElementById('bnav-pro').style.display=mode==='pro'?'flex':'none';
+  if(mode==='pro'){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-pro').classList.add('active');}else showTab('accueil');
+}
+
+function showMonAutoTab(btn,tabId){
+  ['tab-vehicule','tab-historique','tab-outils'].forEach(t=>{const el=document.getElementById(t);if(el)el.style.display='none';});
+  document.getElementById(tabId).style.display='block';
+  document.querySelectorAll('#screen-monauto .chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  if(tabId==='tab-historique')renderHistorique();
+  if(tabId==='tab-outils')renderReparations();
+}
+
+// ACCUEIL
+function updateAccueil(){
+  const h=JSON.parse(localStorage.getItem('historique')||'[]');
+  document.getElementById('usage-display').textContent=getUsage()+' / ∞';
+  if(h.length>0){
+    const last=h[0];
+    document.getElementById('last-analyse-card').style.display='flex';
+    document.getElementById('no-analyse-card').style.display='none';
+    document.getElementById('la-title').textContent=(last.vehicule||'Véhicule')+' · '+(last.devis||'—')+'€';
+    document.getElementById('la-sub').textContent=(last.date||'—')+' — '+((last.result&&last.result.score_label)||'—');
+    const score=last.result&&last.result.score;
+    const badge=document.getElementById('la-badge');
+    badge.className='pill '+(score==='ok'?'p-ok':score==='warn'?'p-warn':'p-danger');
+    badge.textContent=score==='ok'?'✓ Correct':score==='warn'?'⚠ Attention':'✕ Excessif';
+    const icon=document.getElementById('la-icon-bg');
+    icon.style.background=score==='ok'?'var(--gl)':score==='warn'?'var(--ol)':'var(--rl)';
+    icon.textContent=score==='ok'?'✓':score==='warn'?'⚠':'✕';
+  }
+  const w=JSON.parse(localStorage.getItem('wallet')||'{}');
+  if(w.marque){
+    document.getElementById('vh-name').textContent=(w.marque||'')+' '+(w.modele||'');
+    document.getElementById('vh-sub').textContent=(w.annee||'')+(w.immat?' · '+w.immat:'');
+    document.getElementById('vh-km').textContent=w.km?parseInt(w.km).toLocaleString('fr-FR')+' km':'—';
+    document.getElementById('vh-ct').textContent=w.ct?new Date(w.ct).toLocaleDateString('fr-FR'):'—';
+  }
+  document.getElementById('vh-analyses').textContent=h.length;
+}
+
+function showLastResult(){
+  const h=JSON.parse(localStorage.getItem('historique')||'[]');
+  if(h.length>0&&h[0].result){currentResult=h[0].result;currentEntry=h[0];showTab('analyser');showSubScreen('result');setTimeout(()=>renderResult(h[0].result,h[0].vehicule,h[0].devis),50);}
+}
+
+function getUsage(){return parseInt(localStorage.getItem('usage_count')||'0');}
+function incrementUsage(){localStorage.setItem('usage_count',getUsage()+1);}
+
+// MODELES
+document.addEventListener('DOMContentLoaded',function(){
+  const marqueSelect=document.getElementById('marque');
+  const modeleSelect=document.getElementById('modele');
+  if(marqueSelect&&modeleSelect){
+    marqueSelect.addEventListener('change',function(){
+      modeleSelect.innerHTML='<option value="">Modèle...</option>';
+      const models=MODELS[this.value]||[];
+      models.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;modeleSelect.appendChild(o);});
+      if(!models.length){const o=document.createElement('option');o.value='Autre (saisie libre)';o.textContent='Saisir manuellement...';modeleSelect.appendChild(o);modeleSelect.value='Autre (saisie libre)';document.getElementById('modele-custom-wrap').style.display='block';}
+      else{document.getElementById('modele-custom-wrap').style.display='none';}
+    });
+    modeleSelect.addEventListener('change',function(){document.getElementById('modele-custom-wrap').style.display=this.value==='Autre (saisie libre)'?'block':'none';});
+  }
+  const pieceNom=document.getElementById('piece-nom');
+  if(pieceNom)pieceNom.addEventListener('change',function(){document.getElementById('piece-custom-wrap').style.display=this.value==='Autre (saisie libre)'?'block':'none';});
+  const sym=document.getElementById('symptomes');
+  if(sym)sym.addEventListener('input',function(){this.value=this.value.slice(0,300);document.getElementById('sym-count').textContent=this.value.length+' / 300';});
+  loadWallet();updateAccueil();initComparateur();
+});
+
+function getModeleValue(){
+  const modeleSelect=document.getElementById('modele');
+  if(modeleSelect&&modeleSelect.value==='Autre (saisie libre)'){const mc=document.getElementById('modele-custom');return mc?mc.value.trim():'';}
+  return modeleSelect?modeleSelect.value:'';
+}
+
+// ANALYSE
+async function lancerAnalyse(){
+  const symptomes=document.getElementById('symptomes').value.trim();
+  const devis=document.getElementById('devis').value.trim();
+  if(!symptomes||!devis){alert('Décrivez le problème et indiquez le montant du devis.');return;}
+  const vehicule=[document.getElementById('marque').value,getModeleValue(),document.getElementById('annee').value,document.getElementById('km').value?document.getElementById('km').value+' km':''].filter(Boolean).join(' ')||'Non précisé';
+  showSubScreen('loading');
+  let mi=0;const iv=setInterval(()=>{mi=(mi+1)%LOADING_MSGS.length;document.getElementById('loading-msg').textContent=LOADING_MSGS[mi];},1800);
+  try{
+    localStorage.setItem('last_vehicule',JSON.stringify({marque:document.getElementById('marque').value,modele:getModeleValue(),annee:document.getElementById('annee').value}));
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:`Expert mécanicien français 20 ans expérience. Analyse ce devis avec prix PRÉCIS et RÉALISTES basés sur tarifs français actuels.\nVéhicule: ${vehicule}\nSymptômes: ${symptomes}\nMontant devis: ${devis}€\nDétail: ${document.getElementById('detail').value||'Non fourni'}\nJSON valide sans markdown, fourchettes PRÉCISES écart max 30%:\n{"score":"ok","score_label":"Prix correct","fourchette_min":180,"fourchette_max":240,"pieces_prix":"80-120€","mo_prix":"60-90€","diagnostic_coherent":true,"diagnostic_explication":"Explication 2-3 phrases","argument":"Phrase négociation concrète"}\nscore: ok si dans fourchette, warn si dépasse 20-40%, danger si dépasse plus de 40%`}]})});
+    const data=await res.json();clearInterval(iv);
+    const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    currentResult=r;currentEntry={id:Date.now().toString(),date:new Date().toLocaleDateString('fr-FR'),vehicule,symptomes,devis,detail:document.getElementById('detail').value,result:r};
+    const h=JSON.parse(localStorage.getItem('historique')||'[]');h.unshift(currentEntry);localStorage.setItem('historique',JSON.stringify(h.slice(0,50)));
+    incrementUsage();showSubScreen('result');setTimeout(()=>renderResult(r,vehicule,devis),50);
+  }catch(e){clearInterval(iv);alert('Erreur: '+e.message);showSubScreen('home');}
+}
+
+function renderResult(r,vehicule,devis){
+  document.getElementById('result-vehicle').textContent=vehicule;
+  const sc=document.getElementById('score-card');sc.className='score-card score-'+r.score;
+  const iw=document.getElementById('score-icon-wrap');iw.style.background=r.score==='ok'?'var(--g)':r.score==='warn'?'var(--o)':'var(--r)';
+  document.getElementById('score-icon').textContent=r.score==='ok'?'✓':r.score==='warn'?'⚠':'✕';
+  document.getElementById('score-text').textContent=r.score_label;
+  document.getElementById('price-breakdown').innerHTML=`<div class="rrow"><span class="rl">Devis reçu</span><span class="rv">${parseInt(devis)} €</span></div><div class="rrow"><span class="rl">Fourchette normale</span><span class="rv ${r.score}">${r.fourchette_min}€ – ${r.fourchette_max}€</span></div><div class="rrow"><span class="rl">Pièces estimées</span><span class="rv">${r.pieces_prix}</span></div><div class="rrow"><span class="rl">Main d'œuvre</span><span class="rv">${r.mo_prix}</span></div>`;
+  document.getElementById('diag-status').textContent=r.diagnostic_coherent?'✓ Diagnostic cohérent':'⚠ Diagnostic à vérifier';
+  document.getElementById('diag-text').textContent=r.diagnostic_explication;
+  document.getElementById('arg-text').textContent=r.argument;
+}
+
+// SCAN PHOTO
+async function scanDevis(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    document.getElementById('scan-preview').innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:160px;object-fit:cover;border-radius:var(--rads);margin-bottom:8px;">`;
+    const st=document.getElementById('scan-status');st.style.display='block';st.textContent='🔍 Lecture en cours...';
+    try{
+      const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:600,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:e.target.result.split(',')[1]}},{type:'text',text:'Lis ce devis auto. JSON uniquement: {"montant":0,"detail":"","symptomes":""}'}]}]})});
+      const data=await res.json();const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+      if(r.montant)document.getElementById('devis').value=r.montant;
+      if(r.detail)document.getElementById('detail').value=r.detail;
+      if(r.symptomes){document.getElementById('symptomes').value=r.symptomes;document.getElementById('sym-count').textContent=r.symptomes.length+' / 300';}
+      st.textContent='✅ Devis lu !';
+    }catch(e){st.textContent='⚠ Remplissez manuellement.';}
+  };reader.readAsDataURL(file);
+}
+
+// SCAN CARTE GRISE
+async function scanCarteGrise(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    showToast('📄 Lecture carte grise...');
+    try{
+      const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:400,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:e.target.result.split(',')[1]}},{type:'text',text:'Lis cette carte grise. JSON: {"marque":"","modele":"","annee":0,"immat":"","km":0}'}]}]})});
+      const data=await res.json();const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+      const w=JSON.parse(localStorage.getItem('wallet')||'{}');
+      if(r.marque)w.marque=r.marque;if(r.modele)w.modele=r.modele;if(r.annee)w.annee=r.annee;if(r.immat)w.immat=r.immat;
+      localStorage.setItem('wallet',JSON.stringify(w));loadWallet();showTab('monauto');showToast('✅ Carte grise lue !');
+    }catch(e){showToast('⚠ Remplissez manuellement.');}
+  };reader.readAsDataURL(file);
+}
+
+// ANNONCE
+async function analyserAnnonce(){
+  const vehicule=document.getElementById('ann-vehicule').value.trim();
+  const prix=document.getElementById('ann-prix').value.trim();
+  if(!vehicule||!prix){alert('Remplissez le véhicule et le prix.');return;}
+  document.getElementById('ann-result').innerHTML='<div style="text-align:center;padding:20px;"><div class="spinner"></div></div>';
+  try{
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,messages:[{role:'user',content:`Expert automobile. Analyse annonce occasion.\nVéhicule: ${vehicule}\nPrix: ${prix}€\nKm: ${document.getElementById('ann-km').value||'?'}km\nDescription: ${document.getElementById('ann-desc').value||'—'}\nJSON: {"verdict":"bon_plan","score_label":"Bon plan !","prix_marche_min":0,"prix_marche_max":0,"points_forts":[""],"points_attention":[""],"conseil":""}\nverdict: bon_plan/prix_correct/trop_cher`}]})});
+    const data=await res.json();const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    const icon=r.verdict==='bon_plan'?'🟢':r.verdict==='prix_correct'?'🟡':'🔴';
+    document.getElementById('ann-result').innerHTML=`<div class="card"><div style="font-size:20px;font-weight:900;margin-bottom:8px;">${icon} ${r.score_label}</div><div class="rrow"><span class="rl">Prix marché</span><span class="rv">${r.prix_marche_min}€ – ${r.prix_marche_max}€</span></div><div style="margin-top:10px;"><div class="sec-title">✅ Points forts</div>${r.points_forts.map(p=>`<div style="font-size:13px;padding:4px 0;color:var(--gd);">• ${p}</div>`).join('')}</div><div style="margin-top:10px;"><div class="sec-title">⚠️ Points d'attention</div>${r.points_attention.map(p=>`<div style="font-size:13px;padding:4px 0;color:var(--o);">• ${p}</div>`).join('')}</div><div class="arg-box" style="margin-top:10px;">${r.conseil}</div></div>`;
+  }catch(e){document.getElementById('ann-result').innerHTML='<div class="card-sm" style="color:var(--r);">Erreur. Réessayez.</div>';}
+}
+
+async function scanAnnonce(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    showToast('🔍 Analyse...');
+    try{
+      const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:400,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:e.target.result.split(',')[1]}},{type:'text',text:'Lis cette annonce auto. JSON: {"vehicule":"","prix":0,"km":0,"desc":""}'}]}]})});
+      const data=await res.json();const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+      if(r.vehicule)document.getElementById('ann-vehicule').value=r.vehicule;
+      if(r.prix)document.getElementById('ann-prix').value=r.prix;
+      if(r.km)document.getElementById('ann-km').value=r.km;
+      if(r.desc)document.getElementById('ann-desc').value=r.desc;
+      showToast('✅ Annonce lue !');
+    }catch(e){showToast('⚠ Remplissez manuellement.');}
+  };reader.readAsDataURL(file);
+}
+
+// PIECES
+function initPieces(){
+  const lv=JSON.parse(localStorage.getItem('last_vehicule')||'{}');
+  const w=JSON.parse(localStorage.getItem('wallet')||'{}');
+  const marque=lv.marque||w.marque||'';const annee=lv.annee||w.annee||'';
+  if(marque){document.getElementById('piece-marque').value=marque;document.getElementById('piece-annee').value=annee;document.getElementById('pieces-vehicle-info').innerHTML=marque+(annee?' · '+annee:'');}
+}
+
+function prefillPieces(){
+  const v=JSON.parse(localStorage.getItem('last_vehicule')||'{}');
+  if(!v.marque)return;
+  document.getElementById('piece-marque').value=v.marque;
+  if(v.annee)document.getElementById('piece-annee').value=v.annee;
+  document.getElementById('piece-modele').value=v.modele||'';
+}
+
+async function rechercherPieces2(){
+  const pieceSelect=document.getElementById('piece-nom');
+  let piece=pieceSelect.options[pieceSelect.selectedIndex]?.text||pieceSelect.value||'';
+  if(piece==='Autre (saisie libre)'){const c=document.getElementById('piece-custom');piece=c?c.value.trim():'';}
+  const marque=document.getElementById('piece-marque').value.trim();
+  const modele=document.getElementById('piece-modele').value.trim();
+  const annee=document.getElementById('piece-annee').value.trim();
+  const vehicule=[marque,modele,annee].filter(Boolean).join(' ');
+  if(!piece){alert('Sélectionnez une pièce.');return;}
+  const list=document.getElementById('pieces-list');
+  list.innerHTML='<div style="text-align:center;padding:20px;"><div class="spinner"></div></div>';
+  const searchTerm=encodeURIComponent(piece+(vehicule?' '+vehicule:''));
+  const SITES=[{site:'Oscaro',emoji:'🔵',url:`https://www.oscaro.com/fr/search?q=${searchTerm}`},{site:'Mister-Auto',emoji:'🟢',url:`https://www.mister-auto.com/rechercher/?q=${searchTerm}`},{site:'Amazon',emoji:'🟡',url:`https://www.amazon.fr/s?k=${searchTerm}`},{site:'Norauto',emoji:'🔴',url:`https://www.norauto.fr/rechercher/${searchTerm}`},{site:'Autodoc',emoji:'🟠',url:`https://www.auto-doc.fr/search?keyword=${searchTerm}`}];
+  try{
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:600,messages:[{role:'user',content:`Expert pièces auto. Prix "${piece}"${vehicule?' pour '+vehicule:''} France. JSON:\n{"pieces":[{"site":"Oscaro","emoji":"🔵","prix_min":45,"prix_max":120,"dispo":"En stock"},{"site":"Mister-Auto","emoji":"🟢","prix_min":38,"prix_max":95,"dispo":"En stock"},{"site":"Amazon","emoji":"🟡","prix_min":55,"prix_max":140,"dispo":"En stock"},{"site":"Norauto","emoji":"🔴","prix_min":70,"prix_max":160,"dispo":"En magasin"},{"site":"Autodoc","emoji":"🟠","prix_min":35,"prix_max":90,"dispo":"En stock"}],"conseil":""}`}]})});
+    const data=await res.json();const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    list.innerHTML=r.pieces.map(p=>{const s=SITES.find(x=>x.site===p.site)||SITES[0];return `<div class="pcard"><div class="plogo">${p.emoji}</div><div class="pinfo"><div class="psite">${p.site}</div><div class="pprix">${p.prix_min}€ – ${p.prix_max}€</div><div class="pdispo">${p.dispo}</div></div><button class="pbtn" onclick="window.open('${s.url}','_blank')">Voir →</button></div>`;}).join('')+`<div class="card-sm" style="border-left:3px solid var(--g);margin-top:4px;font-size:13px;color:var(--m);">💡 ${r.conseil}</div>`;
+  }catch(e){list.innerHTML='<div class="card-sm" style="color:var(--r);">Erreur. Réessayez.</div>';}
+}
+
+// CHAT
+// ===== AUTH =====
+function switchAuthTab(tab){
+  document.getElementById('form-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('form-inscrire').style.display=tab==='inscrire'?'block':'none';
+  document.getElementById('tab-login').style.background=tab==='login'?'#fff':'transparent';
+  document.getElementById('tab-login').style.color=tab==='login'?'var(--t)':'var(--m)';
+  document.getElementById('tab-login').style.boxShadow=tab==='login'?'var(--shadow-sm)':'none';
+  document.getElementById('tab-inscrire').style.background=tab==='inscrire'?'#fff':'transparent';
+  document.getElementById('tab-inscrire').style.color=tab==='inscrire'?'var(--t)':'var(--m)';
+  document.getElementById('tab-inscrire').style.boxShadow=tab==='inscrire'?'var(--shadow-sm)':'none';
+}
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pwd=document.getElementById('login-password').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('btn-login');
+  errEl.style.display='none';
+  if(!email||!pwd){errEl.textContent='Remplis email et mot de passe.';errEl.style.display='block';return;}
+  btn.textContent='Connexion...';btn.disabled=true;
+  try{
+    await window.firebaseConnecter(email,pwd);
+    btn.textContent='Se connecter';btn.disabled=false;
+    showTab('pro');
+  }catch(e){
+    btn.textContent='Se connecter';btn.disabled=false;
+    const msgs={'auth/user-not-found':'Compte introuvable.','auth/wrong-password':'Mot de passe incorrect.','auth/invalid-email':'Email invalide.','auth/too-many-requests':'Trop de tentatives. Réessaie plus tard.'};
+    errEl.textContent=msgs[e.code]||'Erreur de connexion.';
+    errEl.style.display='block';
+  }
+}
+async function doInscrire(){
+  const nom=document.getElementById('inscrire-nom').value.trim();
+  const email=document.getElementById('inscrire-email').value.trim();
+  const pwd=document.getElementById('inscrire-password').value;
+  const errEl=document.getElementById('inscrire-error');
+  const btn=document.getElementById('btn-inscrire');
+  errEl.style.display='none';
+  if(!nom||!email||!pwd){errEl.textContent='Remplis tous les champs.';errEl.style.display='block';return;}
+  if(pwd.length<6){errEl.textContent='Mot de passe trop court (6 min).';errEl.style.display='block';return;}
+  btn.textContent='Création...';btn.disabled=true;
+  try{
+    const user=await window.firebaseInscrire(email,pwd);
+    // Pré-remplir le nom du garage dans la fiche
+    setTimeout(()=>{const el=document.getElementById('fg-nom');if(el)el.value=nom;},300);
+    btn.textContent='Créer mon compte';btn.disabled=false;
+    showTab('pro');
+  }catch(e){
+    btn.textContent='Créer mon compte';btn.disabled=false;
+    const msgs={'auth/email-already-in-use':'Email déjà utilisé.','auth/invalid-email':'Email invalide.','auth/weak-password':'Mot de passe trop faible.'};
+    errEl.textContent=msgs[e.code]||'Erreur lors de l\'inscription.';
+    errEl.style.display='block';
+  }
+}
+async function doDeconnexion(){
+  await window.firebaseDeconnecter();
+  showTab('accueil');
+  showToast('Déconnecté 👋');
+}
+// Callback quand l'état auth change
+window.onAuthChanged = function(user){
+  // Mettre à jour l'UI du profil Pro si visible
+  const proHeader=document.getElementById('pro-user-info');
+  if(proHeader){
+    if(user){
+      proHeader.innerHTML=`<div style="font-size:12px;color:rgba(255,255,255,0.7);">Connecté</div><div style="font-size:14px;font-weight:700;">${user.email}</div>`;
+    } else {
+      proHeader.innerHTML=`<div style="font-size:12px;color:rgba(255,255,255,0.7);">Non connecté</div>`;
+    }
+  }
+};
+const w=JSON.parse(localStorage.getItem('wallet')||'{}');if(w.marque){chatHistory.push({role:'user',content:`Contexte: véhicule ${w.marque} ${w.modele||''} ${w.annee||''}`});chatHistory.push({role:'assistant',content:`Parfait ! J'ai noté votre ${w.marque}.`});}}
+
+async function sendChat(){
+  const input=document.getElementById('chat-input');const msg=input.value.trim();if(!msg)return;
+  input.value='';addMsg('user',msg);chatHistory.push({role:'user',content:msg});
+  const typing=addMsg('bot','<div class="bdots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>');
+  try{
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:600,messages:[{role:'user',content:'Tu es Mohamed, expert mécanicien français. Réponds en français, clair et pratique, 2-4 phrases max. Conseils concrets et honnêtes.'},{role:'assistant',content:'Compris, je suis Mohamed votre expert mécanique.'}, ...chatHistory]})});
+    const data=await res.json();const reply=data.content[0].text;
+    typing.querySelector('.btext').innerHTML=reply;chatHistory.push({role:'assistant',content:reply});
+    if(isSpeaking)speak(reply);
+  }catch(e){typing.querySelector('.btext').textContent='Erreur de connexion.';}
+}
+
+function addMsg(type,content){const msgs=document.getElementById('chatmsgs');const div=document.createElement('div');div.className='cbub '+type;div.innerHTML=`<div class="btext">${content}</div>`;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;}
+function clearChat(){chatHistory=[];document.getElementById('chatmsgs').innerHTML='<div class="cbub bot"><div class="btext">Bonjour ! Je suis Mohamed 🔧 Comment puis-je vous aider ?</div></div>';}
+function toggleMic(){
+  if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){alert('Non supporté.');return;}
+  if(isRecording){recognition&&recognition.stop();isRecording=false;document.getElementById('mic-btn').classList.remove('rec');return;}
+  recognition=new(window.SpeechRecognition||window.webkitSpeechRecognition)();recognition.lang='fr-FR';recognition.continuous=false;recognition.interimResults=false;
+  recognition.onresult=e=>{document.getElementById('chat-input').value=e.results[0][0].transcript;sendChat();};
+  recognition.onend=()=>{isRecording=false;document.getElementById('mic-btn').classList.remove('rec');};
+  recognition.start();isRecording=true;document.getElementById('mic-btn').classList.add('rec');
+}
+function speak(text){if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(text);u.lang='fr-FR';window.speechSynthesis.speak(u);}}
+
+// COMPARATEUR
+function initComparateur(){devisCount=1;document.getElementById('devis-list').innerHTML='';document.getElementById('compare-result').innerHTML='';addDevis();}
+function addDevis(){
+  if(devisCount>=3)return;devisCount++;
+  const div=document.createElement('div');div.className='ditem';
+  div.innerHTML=`<div class="dhead"><span class="dnum">Garage ${devisCount}</span><button class="dremove" onclick="removeDevis(this)">✕</button></div><div class="field"><label class="lbl">Nom du garage</label><input type="text" class="d-nom" placeholder="Garage Martin"></div><div class="field"><label class="lbl">Prestations</label><textarea class="d-prestations" rows="2" placeholder="Plaquettes AV 280€ + MO 2h"></textarea></div><div class="field"><label class="lbl">Montant total (€)</label><input type="number" class="d-montant" placeholder="450"></div>`;
+  document.getElementById('devis-list').appendChild(div);
+  if(devisCount>=3)document.getElementById('btn-add').style.display='none';
+}
+function removeDevis(btn){btn.closest('.ditem').remove();devisCount--;document.getElementById('btn-add').style.display='block';document.querySelectorAll('.dnum').forEach((el,i)=>el.textContent='Garage '+(i+1));}
+async function comparerDevis(){
+  const items=document.querySelectorAll('.ditem');if(items.length<2){alert('Ajoutez au moins 2 garages.');return;}
+  const garages=Array.from(items).map(i=>({nom:i.querySelector('.d-nom').value||'Garage',prestations:i.querySelector('.d-prestations').value,montant:i.querySelector('.d-montant').value}));
+  document.getElementById('compare-result').innerHTML='<div style="text-align:center;padding:20px;"><div class="spinner"></div></div>';
+  try{
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:600,messages:[{role:'user',content:`Compare ces devis auto:\n${garages.map((g,i)=>`${i+1}. ${g.nom}: ${g.montant}€ — ${g.prestations}`).join('\n')}\nJSON: {"meilleur":1,"analyse":"","garages":[{"rang":1,"nom":"","verdict":"","note":5}]}`}]})});
+    const data=await res.json();const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    document.getElementById('compare-result').innerHTML=`<div class="card"><div class="sec-title">📊 ANALYSE</div><div class="arg-box" style="margin-bottom:12px;">${r.analyse}</div>${r.garages.map((g,i)=>`<div class="rrow"><span class="rl">${g.rang}. ${g.nom}</span><span class="rv ${i===r.meilleur-1?'ok':''}">${g.verdict} · ${g.note}/5</span></div>`).join('')}</div>`;
+  }catch(e){document.getElementById('compare-result').innerHTML='<div class="card-sm" style="color:var(--r);">Erreur.</div>';}
+}
+
+// WALLET
+function loadWallet(){
+  const w=JSON.parse(localStorage.getItem('wallet')||'{}');
+  ['marque','annee','immat','km','assureur','contrat','tel-ass','garage'].forEach(k=>{const el=document.getElementById('w-'+k);if(el&&w[k])el.value=w[k];});
+  if(w.ct){const el=document.getElementById('w-ct');if(el)el.value=w.ct;}
+  updateAccueil();
+}
+function saveWallet(){
+  const w={};
+  ['marque','annee','immat','km','assureur','contrat','tel-ass','ct','garage'].forEach(k=>{const el=document.getElementById('w-'+k);if(el)w[k]=el.value;});
+  localStorage.setItem('wallet',JSON.stringify(w));
+  const btn=document.getElementById('save-btn');btn.textContent='✅ Enregistré';setTimeout(()=>btn.textContent='💾 Enregistrer',2000);
+  if(w.ct)programmerNotifCT(w.ct);updateAccueil();showToast('Véhicule enregistré !');
+}
+function demanderNotifCT(){
+  if(!('Notification'in window)){alert('Notifications non supportées.');return;}
+  Notification.requestPermission().then(perm=>{if(perm==='granted'){const w=JSON.parse(localStorage.getItem('wallet')||'{}');if(w.ct)programmerNotifCT(w.ct);else alert('✅ Activées ! Enregistrez une date CT.');}else alert('❌ Refusées. Activez dans Réglages.');});
+}
+function programmerNotifCT(dateCT){
+  if(!('Notification'in window))return;
+  Notification.requestPermission().then(perm=>{
+    if(perm!=='granted')return;
+    const ct=new Date(dateCT);const rappel=new Date(ct);rappel.setMonth(rappel.getMonth()-1);
+    const now=new Date();const delay=rappel-now;
+    if(delay>0){localStorage.setItem('ct_rappel',JSON.stringify({date:dateCT,rappel:rappel.toISOString()}));alert('✅ Rappel CT programmé ! Notification 1 mois avant le '+ct.toLocaleDateString('fr-FR'));}
+    else if(ct>now)new Notification('🔧 MécanoCheck — CT urgent !',{body:'CT prévu le '+ct.toLocaleDateString('fr-FR'),icon:'/icons/icon-192.png'});
+    else alert('⚠️ Votre CT est dépassé !');
+  });
+}
+
+// HISTORIQUE
+function renderHistorique(){
+  const h=JSON.parse(localStorage.getItem('historique')||'[]');
+  const el=document.getElementById('historique-list');
+  if(!h.length){el.innerHTML='<div class="card-sm" style="text-align:center;color:var(--m);font-size:13px;">Aucune analyse</div>';return;}
+  el.innerHTML=h.map(e=>`<div class="hcard" onclick="showHistoryResult('${e.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><span style="font-size:14px;font-weight:700;">${e.vehicule||'Véhicule'}</span><span class="pill ${e.result&&e.result.score==='ok'?'p-ok':e.result&&e.result.score==='warn'?'p-warn':'p-danger'}">${e.result&&e.result.score_label||'—'}</span></div><div style="font-size:13px;color:var(--m);">${e.date} · ${e.devis||'—'}€</div></div>`).join('');
+}
+function showHistoryResult(id){
+  const h=JSON.parse(localStorage.getItem('historique')||'[]');
+  const entry=h.find(e=>e.id===id);if(!entry)return;
+  currentResult=entry.result;currentEntry=entry;showTab('analyser');showSubScreen('result');setTimeout(()=>renderResult(entry.result,entry.vehicule,entry.devis),50);
+}
+
+// RÉPARATIONS
+function ajouterReparation(){document.getElementById('rep-modal').style.display='flex';}
+function fermerModalRep(){document.getElementById('rep-modal').style.display='none';}
+function sauvegarderReparation(){
+  const r={type:document.getElementById('rep-type').value,desc:document.getElementById('rep-desc').value,date:document.getElementById('rep-date').value,km:document.getElementById('rep-km').value,cout:document.getElementById('rep-cout').value,garage:document.getElementById('rep-garage').value};
+  if(!r.type){alert('Sélectionnez un type.');return;}
+  const reps=JSON.parse(localStorage.getItem('reparations')||'[]');reps.unshift(r);localStorage.setItem('reparations',JSON.stringify(reps.slice(0,50)));
+  fermerModalRep();renderReparations();showToast('Réparation enregistrée !');
+}
+function renderReparations(){
+  const reps=JSON.parse(localStorage.getItem('reparations')||'[]');
+  const el=document.getElementById('reparations-list');
+  if(!reps.length){el.innerHTML='<div class="card-sm" style="text-align:center;color:var(--m);font-size:13px;">Aucune réparation</div>';return;}
+  el.innerHTML=reps.map(r=>`<div class="card-sm"><div style="display:flex;justify-content:space-between;"><span style="font-size:14px;font-weight:700;">${r.type}</span>${r.cout?`<span style="font-size:14px;font-weight:700;color:var(--o);">${r.cout}€</span>`:''}</div>${r.date||r.km?`<div style="font-size:12px;color:var(--m);margin-top:4px;">${r.date?new Date(r.date).toLocaleDateString('fr-FR'):''}${r.km?' · '+parseInt(r.km).toLocaleString('fr-FR')+'km':''}</div>`:''}</div>`).join('');
+}
+
+// QR CODE
+function genererQR(){
+  const w=JSON.parse(localStorage.getItem('wallet')||'{}');
+  const reps=JSON.parse(localStorage.getItem('reparations')||'[]');
+  const container=document.getElementById('qr-container');container.innerHTML='';
+  if(!w.marque){document.getElementById('qr-vehicule-info').textContent='Remplissez Mon véhicule d\'abord';return;}
+  const data={v:[w.marque,w.modele,w.annee,w.immat,w.km?w.km+'km':''].filter(Boolean).join(' | '),ct:w.ct||'',km:w.km||'',reparations:reps.slice(0,5).map(r=>r.type+(r.date?' ('+new Date(r.date).toLocaleDateString('fr-FR')+')':'')+(r.cout?' - '+r.cout+'€':''))};
+  document.getElementById('qr-vehicule-info').textContent=data.v;
+  const url=window.location.origin+window.location.pathname+'?vehicule='+encodeURIComponent(JSON.stringify(data));
+  try{new QRCode(container,{text:url,width:200,height:200,colorDark:'#0A0E1A',colorLight:'#ffffff'});}catch(e){container.innerHTML='<div style="font-size:13px;color:var(--m);">QR non disponible</div>';}
+  document.getElementById('qr-preview-data').innerHTML=[['🚗 Véhicule',data.v],['📅 CT',data.ct?new Date(data.ct).toLocaleDateString('fr-FR'):'—'],['⏱ Km',data.km?parseInt(data.km).toLocaleString('fr-FR')+' km':'—'],['🔧 Réparations',reps.length+' enregistrée(s)']].map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bg);font-size:13px;"><span style="color:var(--m);">${l}</span><span style="font-weight:600;">${v}</span></div>`).join('');
+}
+
+// GARAGES
+const FILTRE_OSM={'car_repair':'amenity','car_inspection':'amenity','bodyshop':'shop','tyres':'shop','car':'shop'};
+const FILTRE_LABELS={'car_repair':'Mécanique','car_inspection':'CT','bodyshop':'Carrosserie','tyres':'Pneus','car':'Concessionnaire'};
+function setFiltre(btn,filtre){
+  currentFiltre=filtre;
+  document.querySelectorAll('.filtre-chips .chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  if(window._lastLat&&window._lastLon)lancerRechercheGarages(window._lastLat,window._lastLon,window._lastLabel);
+}
+function initMapIfNeeded(){}
+function clearMapMarkers(){}
+async function garagesAutourdeMoi(){
+  document.getElementById('garages-list').innerHTML='<div class="card-sm" style="text-align:center;color:var(--m);">📍 Localisation...</div>';
+  if(!navigator.geolocation){document.getElementById('garages-list').innerHTML='<div class="card-sm" style="color:var(--r);">Non supporté</div>';return;}
+  navigator.geolocation.getCurrentPosition(pos=>lancerRechercheGarages(pos.coords.latitude,pos.coords.longitude,'votre position'),()=>{document.getElementById('garages-list').innerHTML='<div class="card-sm" style="color:var(--r);">Accès refusé.</div>';});
+}
+async function rechercherGarages(){
+  const ville=document.getElementById('ville-search').value.trim();if(!ville){alert('Entrez une ville.');return;}
+  document.getElementById('garages-list').innerHTML='<div class="card-sm" style="text-align:center;color:var(--m);">🔍 Recherche...</div>';
+  try{
+    const geoRes=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(ville)}&format=json&limit=1`);
+    const geoData=await geoRes.json();
+    if(!geoData.length){document.getElementById('garages-list').innerHTML='<div class="card-sm" style="color:var(--r);">Ville non trouvée.</div>';return;}
+    await lancerRechercheGarages(parseFloat(geoData[0].lat),parseFloat(geoData[0].lon),geoData[0].display_name.split(',')[0]);
+  }catch(e){document.getElementById('garages-list').innerHTML='<div class="card-sm" style="color:var(--r);">Erreur réseau.</div>';}
+}
+function lancerRechercheGarages(lat,lon,label){
+  const list=document.getElementById('garages-list');
+  window._lastLat=lat;window._lastLon=lon;window._lastLabel=label;
+  list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--m);font-weight:500;">Recherche garages autour de ${label}...</div>`;
+  const mapDiv=document.getElementById('leaflet-map');
+  mapDiv.innerHTML='';
+  const mapLoading=document.getElementById('map-loading');if(mapLoading)mapLoading.style.display='none';
+  const map=new google.maps.Map(mapDiv,{center:{lat,lng:lon},zoom:14});
+  new google.maps.Marker({position:{lat,lng:lon},map,icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#00D68F',fillOpacity:1,strokeColor:'#fff',strokeWeight:2}});
+  const service=new google.maps.places.PlacesService(map);
+  const kwMap={car_repair:'garage mécanique',car_inspection:'contrôle technique CT',bodyshop:'carrosserie',tyres:'pneus',car:'concessionnaire'};
+  const tyMap={car_repair:'car_repair',car_inspection:'car_repair',bodyshop:'car_repair',tyres:'car_repair',car:'car_dealer'};
+  const request={location:new google.maps.LatLng(lat,lon),radius:5000,type:tyMap[currentFiltre]||'car_repair',keyword:kwMap[currentFiltre]||'garage'};
+  service.nearbySearch(request,async(results,status)=>{
+  if(status===google.maps.places.PlacesServiceStatus.OK&&results.length){
+    const fiches=window.getAllFiches?await window.getAllFiches():[];
+    const nomsFiches=fiches.map(f=>(f.nom||'').toLowerCase());
+    list.innerHTML=results.map(p=>{
+      const isMecano=nomsFiches.some(n=>n&&p.name&&p.name.toLowerCase().includes(n));
+      new google.maps.Marker({
+        position:p.geometry.location,map,title:p.name,
+        icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${isMecano?40:30}" height="${isMecano?40:30}" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${isMecano?'#FF6B35':'#5B5FEF'}" stroke="#fff" stroke-width="2"/><text x="20" y="26" text-anchor="middle" font-size="16">🔧</text></svg>`),scaledSize:new google.maps.Size(isMecano?40:30,isMecano?40:30)}
+      });
+      const addr=p.vicinity||'Adresse non renseignée';
+      const rating=p.rating?`⭐ ${p.rating}`:'';
+      const open=p.opening_hours?.open_now===true?'<span style="color:var(--g);font-weight:600;"> · Ouvert</span>':p.opening_hours?.open_now===false?'<span style="color:var(--r);"> · Fermé</span>':'';
+      const mapsUrl=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name+' '+addr)}&query_place_id=${p.place_id}`;
+      return `<div class="gcard">${isMecano?'<div style="font-size:11px;font-weight:700;color:var(--o);margin-bottom:4px;">⭐ Garage MécanoCheck</div>':''}<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><div class="gname">${p.name}</div><div class="gdist" style="margin-top:2px;">${rating}${open}</div></div><a href="${mapsUrl}" target="_blank" style="background:var(--g);color:#fff;border:none;border-radius:var(--radxs);padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;flex-shrink:0;">Maps →</a></div><div class="gaddr">📍 ${addr}</div></div>`;
+    }).join('');
+    const mapLoading=document.getElementById('map-loading');if(mapLoading)mapLoading.style.display='none';
+  } else {
+    list.innerHTML='<div style="text-align:center;padding:24px;color:var(--r);">Aucun garage trouvé. Essayez une autre zone.</div>';
+  }
+});
+}
+// ARNAQUES
+function renderArnaques(){
+  const A=[{t:'Vidange trop fréquente',d:'Certains garagistes recommandent une vidange tous les 5 000 km alors que votre constructeur préconise 15 000 à 30 000 km. Vérifiez toujours votre carnet d\'entretien.',u:'Méfiance',c:'var(--r)'},{t:'Remplacement des 4 pneus imposé',d:'Un pneu crevé ne nécessite pas de changer les 4. Seuls les véhicules intégraux peuvent l\'exiger. Demandez toujours la justification.',u:'Attention',c:'var(--o)'},{t:'Pièces defectueuses montrées',d:'Le garagiste vous montre une pièce "usée" pour justifier un remplacement. Demandez à reprendre l\'ancienne pièce ou à la faire voir par un second garage.',u:'Méfiance',c:'var(--r)'},{t:'Devis oral sans écrit',d:'Toujours exiger un devis écrit AVANT les travaux. En France, le devis au-dessus de 150€ est obligatoire si vous le demandez.',u:'Droits',c:'var(--b)'},{t:'Filtres multiples inutiles',d:'Filtre à air, habitacle, carburant remplacés ensemble alors qu\'un seul était nécessaire. Vérifiez l\'état réel avant accord.',u:'Attention',c:'var(--o)'},{t:'Disques ET plaquettes forcément ensemble',d:'On peut très bien changer uniquement les plaquettes si les disques sont dans les normes. Minimum légal : épaisseur > seuil d\'usure.',u:'Info',c:'var(--y)'},{t:'Main d\'œuvre gonflée',d:'Taux horaires varient de 50€ à 120€/h. Renseignez-vous sur le taux AVANT. Pour une même panne, le temps peut varier du simple au double.',u:'Attention',c:'var(--o)'},{t:'Additifs miracles',d:'Additif moteur, traitement carburant, nettoyant injecteur... Rarement nécessaires. Refusez sauf prescription constructeur.',u:'Info',c:'var(--y)'}];
+  document.getElementById('arnaques-list').innerHTML=A.map(a=>`<div class="card-sm" style="border-left:4px solid ${a.c};margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><span style="font-size:14px;font-weight:700;">${a.t}</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${a.c}20;color:${a.c};">${a.u}</span></div><div style="font-size:13px;color:var(--m);line-height:1.5;">${a.d}</div></div>`).join('');
+}
+
+// JEUNE CONDUCTEUR
+
+function renderJeune(){
+  document.getElementById('jeune-content').innerHTML=`
+  <div style="background:linear-gradient(135deg,#FF6B35,#FF3B5C);border-radius:var(--rad);padding:22px 20px;margin-bottom:0;color:#fff;position:relative;overflow:hidden;">
+    <div style="position:absolute;right:-20px;bottom:-20px;font-size:120px;opacity:0.12;">🚗</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;opacity:0.75;margin-bottom:6px;">Ce qu'on ne t'apprend pas au permis</div>
+    <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:5px;">Jeune Conducteur</div>
+    <div style="font-size:13px;opacity:0.8;">Guide complet, illustré, pour ne rien rater</div>
+  </div>
+  <div style="background:var(--card);margin-bottom:14px;padding:12px 0 8px;">
+    <div style="display:flex;gap:7px;overflow-x:auto;padding:0 16px 4px;scrollbar-width:none;">
+      <button class="chip active" onclick="setJeunTab(this,'niveaux')" id="jtab-niveaux">🛢️ Niveaux</button>
+      <button class="chip" onclick="setJeunTab(this,'voyants')" id="jtab-voyants">🚨 Voyants</button>
+      <button class="chip" onclick="setJeunTab(this,'entretien')" id="jtab-entretien">📅 Entretien</button>
+      <button class="chip" onclick="setJeunTab(this,'achat')" id="jtab-achat">🛒 Acheter</button>
+      <button class="chip" onclick="setJeunTab(this,'urgence')" id="jtab-urgence">🆘 Urgences</button>
+    </div>
+  </div>
+  <div id="jcontent-niveaux"><div id="niveaux-content"></div></div>
+  <div id="jcontent-voyants" style="display:none;"><div id="voyants-content"></div></div>
+  <div id="jcontent-entretien" style="display:none;"><div id="entretien-content"></div></div>
+  <div id="jcontent-achat" style="display:none;"><div id="achat-content"></div></div>
+  <div id="jcontent-urgence" style="display:none;"><div id="urgence-content"></div></div>`;
+  initJeune();
+}
+ 
+function setJeunTab(btn,tab){
+  document.querySelectorAll('[id^="jtab-"]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  ['niveaux','voyants','entretien','achat','urgence'].forEach(t=>{const el=document.getElementById('jcontent-'+t);if(el)el.style.display=t===tab?'block':'none';});
+  const renders={niveaux:renderNiveaux,voyants:renderVoyantsJeune,entretien:renderEntretien,achat:renderAchat,urgence:renderUrgence};
+  if(renders[tab])renders[tab]();
+}
+ 
+const NIVEAUX_DATA=[
+  {nom:'Huile moteur',freq:'Tous les 1 000 km',couleur:'#FF6B35',urgence:'CRITIQUE si bas',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#FF6B3520" stroke="#FF6B35" stroke-width="2"/><path d="M20 38 L20 22 Q20 18 24 18 L32 18 L38 24 L38 38 Q38 42 34 42 L24 42 Q20 42 20 38Z" fill="#FF6B35" opacity="0.9"/><ellipse cx="30" cy="20" rx="6" ry="3" fill="#FF9966"/><path d="M38 26 Q44 26 44 32 L44 36 Q44 40 40 40" fill="none" stroke="#FF6B35" stroke-width="2.5" stroke-linecap="round"/><circle cx="40" cy="40" r="3" fill="#FF6B35"/></svg>`,
+    conseil:'Vérifiez à froid, moteur éteint depuis 10 min. Niveau entre MIN et MAX sur la jauge.'},
+  {nom:'Liquide de refroidissement',freq:'Tous les 6 mois',couleur:'#00C8FF',urgence:'URGENT si bas',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#00C8FF20" stroke="#00C8FF" stroke-width="2"/><path d="M30 10 Q38 20 38 30 Q38 42 30 46 Q22 42 22 30 Q22 20 30 10Z" fill="#00C8FF" opacity="0.85"/><path d="M20 26 L14 26 M40 26 L46 26" stroke="#00C8FF" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    conseil:'Réservoir transparent sur le côté du moteur. Niveau entre MIN et MAX, moteur froid.'},
+  {nom:'Liquide de frein',freq:'Tous les 2 ans',couleur:'#FF3B5C',urgence:'DANGER si bas',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#FF3B5C20" stroke="#FF3B5C" stroke-width="2"/><circle cx="30" cy="30" r="14" fill="none" stroke="#FF3B5C" stroke-width="3"/><circle cx="30" cy="30" r="8" fill="#FF3B5C" opacity="0.8"/><path d="M30 16 L30 10 M30 44 L30 50 M16 30 L10 30 M44 30 L50 30" stroke="#FF3B5C" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    conseil:'Petit réservoir carré sur le maître-cylindre. Ne jamais descendre sous MIN — risque de défaillance des freins.'},
+  {nom:'Lave-glace',freq:'Au besoin',couleur:'#3B82F6',urgence:'Sécurité',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#3B82F620" stroke="#3B82F6" stroke-width="2"/><path d="M15 38 Q22 32 30 36 Q38 40 45 34" fill="none" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/><path d="M22 22 L22 16 M30 20 L30 14 M38 22 L38 16" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/><circle cx="30" cy="12" r="2" fill="#3B82F6"/></svg>`,
+    conseil:'Grand réservoir bleu. Utilisez un produit concentré — évitez l\'eau seule qui gèle en hiver.'},
+  {nom:'Batterie',freq:'Tous les 3-4 ans',couleur:'#FFBB00',urgence:'Surveiller',
+    svg:`<svg viewBox="0 0 60 60" width="50" height="50"><circle cx="30" cy="30" r="28" fill="#FFBB0020" stroke="#FFBB00" stroke-width="2"/><rect x="14" y="22" width="32" height="20" rx="4" fill="#FFBB00" opacity="0.85"/><rect x="22" y="18" width="6" height="6" rx="2" fill="#FFBB00"/><rect x="32" y="18" width="6" height="6" rx="2" fill="#FFBB00"/><path d="M26 32 L30 26 L30 31 L34 31 L30 37 L30 32 Z" fill="white" opacity="0.9"/></svg>`,
+    conseil:'Vérifiez les bornes — pas de dépôt blanc/bleu. Tension normale : 12,6V. Durée de vie : 4-6 ans.'},
+];
+ 
+const VOYANTS_JEUNE=[
+  {nom:'Pression d\'huile',couleur:'#FF3B5C',urgence:'STOP IMMÉDIAT',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><path d="M10 32 L10 20 Q10 16 14 16 L22 16 L28 22 L28 32 Q28 36 24 36 L14 36 Q10 36 10 32Z" fill="#FF3B5C"/><path d="M28 22 Q34 22 34 28 L34 32 Q34 36 30 36" fill="none" stroke="#FF3B5C" stroke-width="2.5" stroke-linecap="round"/><circle cx="30" cy="36" r="2.5" fill="#FF3B5C"/><path d="M44 32 L48 18 L52 32 M46 27 L50 27" stroke="#FF3B5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
+    msg:'Arrêtez le moteur IMMÉDIATEMENT. Rouler quelques secondes suffit à le détruire.'},
+  {nom:'Température moteur',couleur:'#FF3B5C',urgence:'STOP IMMÉDIAT',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><rect x="26" y="6" width="8" height="18" rx="4" fill="#FF3B5C"/><circle cx="30" cy="30" r="7" fill="#FF3B5C"/><path d="M14 12 L22 12 M14 16 L22 16 M14 20 L22 20" stroke="#FF3B5C" stroke-width="2" stroke-linecap="round"/></svg>`,
+    msg:'Surchauffe. Coupez la clim, arrêtez-vous dès que possible. N\'ouvrez pas le capot tout de suite.'},
+  {nom:'Batterie / Alternateur',couleur:'#FF6B35',urgence:'RAPIDE',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><rect x="10" y="10" width="32" height="20" rx="4" fill="#FF6B35"/><rect x="18" y="6" width="6" height="6" rx="2" fill="#FF6B35"/><rect x="28" y="6" width="6" height="6" rx="2" fill="#FF6B35"/><path d="M22 20 L26 14 L26 19 L30 19 L26 25 L26 20 Z" fill="white" opacity="0.9"/></svg>`,
+    msg:'Problème charge électrique. Allez chez un garagiste rapidement avant panne totale.'},
+  {nom:'Frein à main / Frein',couleur:'#FF6B35',urgence:'VÉRIFIEZ',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><circle cx="30" cy="20" r="14" fill="none" stroke="#FF6B35" stroke-width="3"/><circle cx="30" cy="20" r="8" fill="#FF6B35" opacity="0.8"/><text x="30" y="25" text-anchor="middle" fill="white" font-size="12" font-weight="900" font-family="Inter,sans-serif">!</text></svg>`,
+    msg:'Vérifiez que le frein à main est abaissé. Si oui → niveau liquide de frein insuffisant.'},
+  {nom:'Moteur (Check Engine)',couleur:'#FFBB00',urgence:'BIENTÔT',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><path d="M10 28 L10 20 L16 20 L20 14 L34 14 L34 20 L38 20 L42 24 L42 28 L44 28 L44 32 L40 32 L40 36 L12 36 L12 32 L10 32 Z" fill="#FFBB00" opacity="0.9"/><rect x="14" y="18" width="12" height="10" rx="2" fill="white" opacity="0.2"/></svg>`,
+    msg:'Panne moteur détectée. Roulez jusqu\'au garage. Utilisez un lecteur OBD2 pour lire le code erreur.'},
+  {nom:'ABS',couleur:'#FFBB00',urgence:'CONTRÔLE',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><circle cx="30" cy="20" r="14" fill="none" stroke="#FFBB00" stroke-width="3"/><text x="30" y="26" text-anchor="middle" fill="#FFBB00" font-size="10" font-weight="900" font-family="Inter,sans-serif">ABS</text></svg>`,
+    msg:'Système anti-blocage défaillant. Freinage moins efficace sur route glissante. Garage conseillé.'},
+  {nom:'Pression pneus (TPMS)',couleur:'#FFBB00',urgence:'VÉRIFIEZ',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><ellipse cx="20" cy="28" rx="9" ry="7" fill="none" stroke="#FFBB00" stroke-width="2.5"/><ellipse cx="40" cy="28" rx="9" ry="7" fill="none" stroke="#FFBB00" stroke-width="2.5"/><path d="M20 21 L20 14 L40 14 L40 21" fill="none" stroke="#FFBB00" stroke-width="2.5" stroke-linecap="round"/><text x="30" y="18" text-anchor="middle" fill="#FFBB00" font-size="8" font-weight="900" font-family="Inter,sans-serif">!</text></svg>`,
+    msg:'Un ou plusieurs pneus sous-gonflés. Vérifiez la pression à froid en station service.'},
+  {nom:'Direction assistée',couleur:'#5B5FEF',urgence:'INFO',
+    svg:`<svg viewBox="0 0 60 40" width="70" height="45"><circle cx="30" cy="20" r="13" fill="none" stroke="#5B5FEF" stroke-width="2.5"/><circle cx="30" cy="20" r="4" fill="#5B5FEF"/><path d="M30 7 L30 11 M30 29 L30 33 M17 20 L21 20 M39 20 L43 20" stroke="#5B5FEF" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    msg:'Direction assistée défaillante. Volant plus lourd surtout à basse vitesse. Garage conseillé.'},
+];
+ 
+function renderNiveaux(){
+  document.getElementById('niveaux-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);border-radius:var(--rad);padding:18px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:13px;font-weight:700;opacity:0.6;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">🔧 Sous le capot — vue d'ensemble</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${NIVEAUX_DATA.map(n=>`<div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:50%;background:${n.couleur};flex-shrink:0;"></div><span style="font-size:11px;font-weight:600;opacity:0.9;">${n.nom}</span></div>`).join('')}
+        </div>
+      </div>
+      ${NIVEAUX_DATA.map(n=>`
+        <div style="background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:10px;box-shadow:var(--shadow-sm);border-left:4px solid ${n.couleur};">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+            <div style="background:${n.couleur}15;border-radius:14px;padding:10px;flex-shrink:0;">${n.svg}</div>
+            <div>
+              <div style="font-size:15px;font-weight:800;margin-bottom:3px;">${n.nom}</div>
+              <div style="font-size:11px;font-weight:700;background:${n.couleur}20;color:${n.couleur};padding:3px 9px;border-radius:20px;display:inline-block;">🔄 ${n.freq}</div>
+              <div style="font-size:10px;font-weight:800;background:${n.couleur};color:#fff;padding:2px 8px;border-radius:20px;display:inline-block;margin-left:4px;">${n.urgence}</div>
+            </div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--rads);padding:11px 13px;font-size:13px;color:var(--m);line-height:1.6;font-weight:500;">${n.conseil}</div>
+        </div>`).join('')}
+      <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);border-radius:var(--rad);padding:18px;color:#fff;margin-top:4px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;">📏 Comment lire la jauge d'huile</div>
+        <div style="font-size:13px;line-height:2.2;opacity:0.85;font-weight:500;">① Moteur froid (attendre 30 min)<br>② Retirez la jauge, essuyez avec un chiffon<br>③ Replongez-la complètement<br>④ Retirez et lisez le niveau<br>✅ Entre MIN et MAX = bon niveau</div>
+      </div>
+    </div>`;
+}
+ 
+function renderVoyantsJeune(){
+  document.getElementById('voyants-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);border-radius:var(--rad);padding:16px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;opacity:0.7;">🚗 Tableau de bord simulé</div>
+        <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+          ${VOYANTS_JEUNE.map(v=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">${v.svg}<div style="font-size:9px;font-weight:600;opacity:0.6;text-align:center;max-width:60px;">${v.nom.split(' ')[0]}</div></div>`).join('')}
+        </div>
+      </div>
+      ${VOYANTS_JEUNE.map(v=>`
+        <div style="background:var(--card);border-radius:var(--rad);padding:16px;margin-bottom:10px;box-shadow:var(--shadow-sm);">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <div style="background:${v.couleur}15;border-radius:12px;padding:8px;flex-shrink:0;">${v.svg}</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:800;margin-bottom:5px;">${v.nom}</div>
+              <span style="font-size:10px;font-weight:800;background:${v.couleur};color:#fff;padding:3px 9px;border-radius:20px;">${v.urgence}</span>
+            </div>
+          </div>
+          <div style="background:${v.couleur}10;border-radius:var(--rads);padding:11px 13px;font-size:13px;color:${v.couleur};line-height:1.5;font-weight:600;border-left:3px solid ${v.couleur};">${v.msg}</div>
+        </div>`).join('')}
+    </div>`;
+}
+ 
+function renderEntretien(){
+  const items=[
+    {km:'Tous les 10 000 km',emoji:'👀',ops:['Contrôle des 5 niveaux','Pression des pneus (à froid)','Vérification des éclairages']},
+    {km:'Tous les 15 000 km ou 1 an',emoji:'🔧',ops:['Vidange huile + filtre à huile','Inspection visuelle des freins']},
+    {km:'Tous les 30 000 km',emoji:'🛠️',ops:['Filtre à air moteur','Filtre d\'habitacle (clim)','Bougies d\'allumage (essence)','Courroie accessoires']},
+    {km:'Tous les 60 000 km',emoji:'⚙️',ops:['Filtre à carburant','Vidange liquide de frein','Contrôle distribution + pompe à eau']},
+    {km:'Tous les 120 000 km',emoji:'🏗️',ops:['Courroie de distribution (CRITIQUE)','Kit embrayage si nécessaire','Amortisseurs à inspecter']},
+  ];
+  document.getElementById('entretien-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#00D68F,#009E78);border-radius:var(--rad);padding:16px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">💡 La règle d'or</div>
+        <div style="font-size:13px;opacity:0.9;line-height:1.5;">Un entretien régulier = moins de pannes, voiture qui garde sa valeur, et sécurité maximale !</div>
+      </div>
+      ${items.map(e=>`
+        <div style="background:var(--card);border-radius:var(--rad);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow-sm);">
+          <div style="background:linear-gradient(135deg,#1E2435,#0A0E1A);padding:11px 14px;display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">${e.emoji}</span>
+            <span style="font-size:13px;font-weight:700;color:#fff;">${e.km}</span>
+          </div>
+          <div style="padding:10px 14px;">
+            ${e.ops.map(op=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg);font-size:13px;font-weight:500;"><span style="color:var(--g);font-size:14px;font-weight:800;">✓</span>${op}</div>`).join('')}
+          </div>
+        </div>`).join('')}
+      <div style="font-size:16px;font-weight:800;margin:16px 0 10px;">🛍️ Liste pour mon 1er véhicule</div>
+      ${[
+        {cat:'🛢️ Entretien courant',c:'#FF6B35',items:['Bidon d\'huile moteur (même référence)','Liquide lave-glace concentré 4 saisons','Chiffons microfibre x5']},
+        {cat:'🚨 Sécurité obligatoire',c:'#FF3B5C',items:['Triangle de signalisation (obligatoire)','Gilet jaune réfléchissant (obligatoire)','Câbles de démarrage']},
+        {cat:'🔧 Outils utiles',c:'#00D68F',items:['Gonfleur portable 12V','Kit réparation pneu crevé','Lampe torche + cric']},
+      ].map(cat=>`<div style="background:var(--card);border-radius:var(--rad);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm);"><div style="font-size:13px;font-weight:700;color:${cat.c};margin-bottom:8px;">${cat.cat}</div>${cat.items.map(i=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg);border-radius:var(--radxs);margin-bottom:6px;font-size:13px;font-weight:500;"><span style="color:${cat.c};font-weight:800;">✓</span>${i}</div>`).join('')}</div>`).join('')}
+    </div>`;
+}
+ 
+function renderAchat(){
+  const checklist=[
+    {cat:'👁️ Carrosserie',items:['Pas de bosses ni rayures profondes','Joints de portes/coffre en bon état','Pneus avec profil suffisant (>3mm)','Pas de rouille visible sous la voiture','Vitres sans fissures ni impacts']},
+    {cat:'🔧 Mécanique',items:['Moteur démarre du premier coup','Pas de fumée bleue (huile) ou blanche (eau)','Pas de bruit suspect au ralenti','Boîte de vitesses sans à-coups','Freins efficaces sans bruit métallique']},
+    {cat:'💺 Intérieur',items:['Climatisation froide','Chauffage fonctionnel','Tous les boutons électriques testés','Odeur de brûlé ou d\'humidité ?']},
+  ];
+  const docs=[
+    {emoji:'📄',doc:'Carte grise au nom du vendeur',tip:'Vérifiez que l\'immatriculation correspond'},
+    {emoji:'🔑',doc:'2 clés minimum',tip:'Une seule clé = méfiez-vous'},
+    {emoji:'📋',doc:'Carnet d\'entretien tamponné',tip:'Chaque entretien = tampon garagiste'},
+    {emoji:'✅',doc:'Contrôle technique < 6 mois',tip:'Plus vieux = à la charge du vendeur'},
+    {emoji:'🚫',doc:'Certificat de non-gage',tip:'Gratuit sur histovec.interieur.gouv.fr'},
+  ];
+  document.getElementById('achat-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#0A0E1A,#1E2435);border-radius:var(--rad);padding:20px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:22px;margin-bottom:8px;">🔎</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:6px;">Analysez l'annonce avant d'acheter</div>
+        <div style="font-size:13px;opacity:0.7;line-height:1.5;margin-bottom:14px;">Collez le texte de l'annonce → l'IA détecte les problèmes connus du modèle</div>
+        <button onclick="showTab('annonce')" style="background:var(--g);color:#fff;border:none;border-radius:var(--rads);padding:12px 20px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Analyser une annonce →</button>
+      </div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:12px;">✅ Checklist inspection</div>
+      ${checklist.map(cat=>`
+        <div style="background:var(--card);border-radius:var(--rad);padding:14px;margin-bottom:10px;box-shadow:var(--shadow-sm);">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px;">${cat.cat}</div>
+          ${cat.items.map(i=>`<label style="display:flex;align-items:center;gap:12px;padding:9px 10px;background:var(--bg);border-radius:var(--rads);margin-bottom:6px;cursor:pointer;"><input type="checkbox" style="width:20px;height:20px;accent-color:var(--g);flex-shrink:0;cursor:pointer;"><span style="font-size:13px;color:var(--m);line-height:1.4;font-weight:500;">${i}</span></label>`).join('')}
+        </div>`).join('')}
+      <div style="font-size:16px;font-weight:800;margin-bottom:12px;margin-top:4px;">📝 Documents obligatoires</div>
+      ${docs.map(d=>`
+        <div style="display:flex;align-items:flex-start;gap:12px;background:var(--card);border-radius:var(--rads);padding:12px;margin-bottom:8px;box-shadow:var(--shadow-sm);">
+          <span style="font-size:22px;flex-shrink:0;">${d.emoji}</span>
+          <div><div style="font-size:14px;font-weight:700;margin-bottom:3px;">${d.doc}</div><div style="font-size:12px;color:var(--m);font-weight:500;">${d.tip}</div></div>
+        </div>`).join('')}
+      <div style="background:linear-gradient(135deg,#EEF0FF,#fff);border-radius:var(--rad);padding:16px;border:1.5px solid #C7C3FF;margin-top:4px;">
+        <div style="font-size:14px;font-weight:700;color:var(--b);margin-bottom:6px;">🔐 Vérifiez sur HistoVec !</div>
+        <div style="font-size:13px;color:var(--m);line-height:1.5;margin-bottom:10px;font-weight:500;">Site officiel du gouvernement — historique complet du véhicule avec la plaque d'immatriculation. Gratuit.</div>
+        <a href="https://histovec.interieur.gouv.fr" target="_blank" style="display:inline-block;background:var(--b);color:#fff;border-radius:var(--radxs);padding:9px 16px;font-size:13px;font-weight:700;text-decoration:none;">Aller sur HistoVec →</a>
+      </div>
+    </div>`;
+}
+ 
+function renderUrgence(){
+  const urgences=[
+    {titre:'Crevaison',steps:['Feux de détresse immédiatement','Ralentissez DOUCEMENT sans freiner brusquement','Garez-vous sur le côté en sécurité','Triangle à 30m (150m autoroute) + gilet AVANT de sortir','Changez la roue ou appelez le 🆘']},
+    {titre:'Surchauffe moteur',steps:['Coupez la climatisation immédiatement','Arrêtez-vous DÈS QUE POSSIBLE','Coupez le moteur — N\'OUVREZ PAS le capot','Attendez 30 min minimum','Appelez un dépanneur']},
+    {titre:'Panne de batterie',steps:['Pas de bruit au démarreur = batterie','Câbles : Rouge+ sur +, Noir- sur masse (pas sur batterie -)','Laissez tourner 10-15 min','Si récurrent → batterie ou alternateur à changer']},
+    {titre:'Accident',steps:['Feux de détresse + triangle + gilet','Appelez le 15 si blessés, 17 si nécessaire','Photographiez AVANT de déplacer les véhicules','Remplissez le constat amiable','Ne reconnaissez pas votre tort']},
+  ];
+  const numeros=[
+    {num:'15',nom:'SAMU — Urgences médicales',emoji:'🏥',c:'#FF3B5C'},
+    {num:'17',nom:'Police — Accident, danger',emoji:'👮',c:'#5B5FEF'},
+    {num:'18',nom:'Pompiers',emoji:'🚒',c:'#FF3B5C'},
+    {num:'112',nom:'Numéro européen universel',emoji:'🆘',c:'#FF6B35'},
+  ];
+  document.getElementById('urgence-content').innerHTML=`
+    <div style="padding:0 16px 16px;">
+      <div style="background:linear-gradient(135deg,#FF3B5C,#CC1A2A);border-radius:var(--rad);padding:16px;margin-bottom:14px;color:#fff;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">🚨 En cas d'urgence</div>
+        <div style="font-size:13px;opacity:0.9;">Activez toujours les feux de détresse en premier. C'est le réflexe numéro 1.</div>
+      </div>
+      ${urgences.map(u=>`
+        <div style="background:var(--card);border-radius:var(--rad);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow-sm);">
+          <div style="background:linear-gradient(135deg,#FF3B5C,#CC1A2A);padding:14px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:20px;">🚨</span>
+            <span style="color:#fff;font-weight:700;font-size:14px;">${u.titre}</span>
+          </div>
+          ${u.steps.map((s,i)=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bg);"><div style="width:26px;height:26px;border-radius:50%;background:var(--r);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">${i+1}</div><span style="font-size:13px;color:var(--m);line-height:1.5;padding-top:4px;font-weight:500;">${s}</span></div>`).join('')}
+        </div>`).join('')}
+      <div style="font-size:16px;font-weight:800;margin-bottom:12px;margin-top:4px;">📞 Numéros d'urgence</div>
+      ${numeros.map(n=>`
+        <a href="tel:${n.num}" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border-radius:var(--rads);margin-bottom:8px;text-decoration:none;box-shadow:var(--shadow-sm);border-left:4px solid ${n.c};">
+          <div style="width:44px;height:44px;border-radius:12px;background:${n.c};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${n.emoji}</div>
+          <div style="flex:1;"><div style="font-size:22px;font-weight:900;color:${n.c};letter-spacing:-0.5px;">${n.num}</div><div style="font-size:13px;color:var(--m);font-weight:500;">${n.nom}</div></div>
+          <div style="font-size:20px;">📞</div>
+        </a>`).join('')}
+    </div>`;
+}
+ 
+function initJeune(){renderNiveaux();}
+  
+// VOYANTS
+function renderVoyants(){
+  const V=[{n:'Moteur',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><rect x="2" y="7" width="4" height="10" rx="1"/><rect x="18" y="7" width="4" height="10" rx="1"/><rect x="6" y="5" width="12" height="14" rx="2"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="15" y1="9" x2="15" y2="15"/></svg>',u:3,b:'STOP',c:'var(--r)',x:'Problème moteur grave. Arrêtez immédiatement et appelez assistance. Ne relancez pas le moteur.'},{n:'Huile moteur',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 2L8 12h8L12 2z"/><circle cx="12" cy="17" r="5"/></svg>',u:3,b:'STOP',c:'var(--r)',x:'Pression huile insuffisante. Arrêtez immédiatement. Vérifiez le niveau avant de redémarrer.'},{n:'Batterie',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="7" y1="4" x2="7" y2="7"/><line x1="17" y1="4" x2="17" y2="7"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',u:2,b:'URGENT',c:'var(--o)',x:'Problème de charge ou batterie défaillante. Limitez la consommation électrique.'},{n:'Température',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>',u:3,b:'STOP',c:'var(--r)',x:'Moteur en surchauffe. Arrêtez, ralenti 5min, puis coupez. N\'ouvrez jamais le bouchon chaud.'},{n:'ABS',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="12" r="9"/><text x="12" y="16" text-anchor="middle" font-size="7" font-weight="900" fill="currentColor">ABS</text></svg>',u:2,b:'URGENT',c:'var(--o)',x:'Système antiblocage défaillant. Freinage possible mais sans assistance. Consultez rapidement.'},{n:'Carburant',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><path d="M3 22V6a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16M3 22h14"/><path d="M17 8h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/></svg>',u:2,b:'URGENT',c:'var(--o)',x:'Réserve bas. Faites le plein dès que possible. Rouler à vide endommage la pompe à carburant.'},{n:'TPMS',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 17 Q12 9 16 17" fill="none" stroke="currentColor" stroke-width="2"/></svg>',u:2,b:'ATTENTION',c:'var(--o)',x:'Pression insuffisante dans un pneu. Vérifiez à la station. Rouler sous-gonflé est dangereux.'},{n:'ESP/ASR',svg:'<svg viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="12" r="9"/><path d="M8 12 Q12 8 16 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>',u:1,b:'INFO',c:'var(--y)',x:'Aide à la stabilité active. Si clignotant continu : problème de capteur. À vérifier.'}];
+  document.getElementById('voyants-grid').innerHTML=V.map(v=>`<div class="voyant-card urgence-${v.u}" onclick="this.classList.toggle('open')"><div style="color:${v.c};">${v.svg}</div><div style="font-size:12px;font-weight:700;margin:6px 0 3px;">${v.n}</div><div style="font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;display:inline-block;background:${v.c}20;color:${v.c};">${v.b}</div><div class="obd-detail">${v.x}</div></div>`).join('');
+}
+
+// OBD
+const OBD_CODES=[{code:'P0301',desc:'Raté allumage cylindre 1',detail:'Allumage ou injecteur sur cylindre 1. Vibrations et perte de puissance.',sev:'danger'},{code:'P0420',desc:'Efficacité catalyseur banc 1',detail:'Catalyseur usé. Pas urgent mais à remplacer pour CT.',sev:'warn'},{code:'P0171',desc:'Mélange trop pauvre',detail:'Trop d\'air ou pas assez carburant. Injecteurs, sonde lambda, durites à vérifier.',sev:'warn'},{code:'P0300',desc:'Ratés d\'allumage aléatoires',detail:'Bougies, bobines, injecteurs à vérifier en priorité.',sev:'danger'},{code:'P0190',desc:'Capteur pression carburant',detail:'Capteur défaillant. Peut causer pannes démarrage.',sev:'warn'},{code:'P0505',desc:'Régulateur ralenti',detail:'Ralenti instable ou calage fréquent.',sev:'warn'},{code:'P0113',desc:'Capteur température air',detail:'Hors plage. Peut affecter la consommation.',sev:'info'},{code:'P0340',desc:'Capteur arbre à cames',detail:'Signal absent. Peut empêcher le démarrage.',sev:'danger'}];
+function renderOBD(filter=''){
+  const codes=filter?OBD_CODES.filter(c=>c.code.toLowerCase().includes(filter.toLowerCase())||c.desc.toLowerCase().includes(filter.toLowerCase())):OBD_CODES;
+  document.getElementById('obd-list').innerHTML=codes.map(c=>`<div class="obd-code" onclick="this.classList.toggle('open')"><div class="ahead"><span class="obd-badge" style="background:${c.sev==='danger'?'var(--rl)':c.sev==='warn'?'var(--ol)':'var(--bl)'};color:${c.sev==='danger'?'var(--r)':c.sev==='warn'?'var(--o)':'var(--b)'};">${c.code}</span><span class="obd-desc">${c.desc}</span><span class="aarrow">›</span></div><div class="obd-detail">${c.detail}</div></div>`).join('')||'<div class="card-sm" style="color:var(--m);">Aucun code trouvé.</div>';
+}
+function searchOBD(){renderOBD(document.getElementById('obd-search').value.trim());}
+
+// DEVIS BUILDER PRO
+function initDevisBuilder(){document.getElementById('devis-lines').innerHTML='';addDevisLine();updateDevisTotal();}
+function fgToggle(el){
+  const on=el.dataset.active==='1';
+  el.dataset.active=on?'0':'1';
+  el.removeAttribute('style');
+  if(!on){el.style.background='var(--primary)';el.style.color='#fff';}
+}
+function fgGetChips(ids){return ids.filter(id=>document.querySelector('.fg-chip[data-v="'+id+'"]')?.dataset.active==='1');}
+function fgAjouterTarif(){const row=document.createElement('div');row.className='fg-tarif-row';row.style.cssText='display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px;';row.innerHTML='<input type="text" placeholder="Prestation"><input type="text" placeholder="Prix" style="width:70px;">';document.getElementById('fg-tarifs').appendChild(row);}
+function fgGetTarifs(){return[...document.querySelectorAll('.fg-tarif-row')].map(r=>{const i=r.querySelectorAll('input');return{label:i[0].value.trim(),prix:i[1].value.trim()};}).filter(t=>t.label);}
+async function fgGenerer(){
+  const nom=document.getElementById('fg-nom').value.trim();
+  const desc=document.getElementById('fg-desc').value.trim();
+  if(!nom||!desc){alert('Remplis le nom et la description !');return;}
+  const adresse=document.getElementById('fg-adresse').value.trim();
+  const tel=document.getElementById('fg-tel').value.trim();
+  const email=document.getElementById('fg-email').value.trim();
+  const hSem=document.getElementById('fg-h-sem').value.trim();
+  const hSam=document.getElementById('fg-h-sam').value.trim();
+  const dim=document.getElementById('fg-dim').checked;
+  const delai=document.getElementById('fg-delai').value.trim();
+  const tags=fgGetChips(['Vidange','Freins','Pneus','Climatisation','Carrosserie','Diagnostic','Révision','Électricité']);
+  const langues=fgGetChips(['Français','Arabe','Anglais','Espagnol','Portugais','Turc']);
+  const tarifs=fgGetTarifs();
+  document.getElementById('fg-form').style.display='none';
+  document.getElementById('fg-loading').style.display='block';
+  const prompt=`Tu es expert en communication pour garages automobiles. Génère une fiche publicitaire pro et accrocheuse.\nInfos: Nom: ${nom} | Adresse: ${adresse||'N/A'} | Description: ${desc} | Spécialités: ${tags.join(',')||'N/A'} | Langues: ${langues.join(',')||'N/A'} | Délai: ${delai||'N/A'} | Tarifs: ${tarifs.map(t=>t.label+':'+t.prix).join(',')||'N/A'}\nRéponds UNIQUEMENT en JSON valide sans markdown: {"accroche":"phrase percutante max 20 mots","points":["point fort 1","point fort 2","point fort 3","point fort 4"]}`;
+  try{
+    const res=await fetch('https://function-bun-production-c4fc.up.railway.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const text=data.content.map(i=>i.text||'').join('');
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    document.getElementById('fg-card-nom').textContent=nom;
+    document.getElementById('fg-avatar').textContent=nom.charAt(0).toUpperCase();
+    document.getElementById('fg-card-adresse').textContent=adresse;
+    document.getElementById('fg-card-accroche').textContent='"'+parsed.accroche+'"';
+    document.getElementById('fg-card-points').innerHTML=parsed.points.map(p=>`<div style="display:flex;align-items:center;gap:8px;"><span style="color:#d4af37;font-size:14px;">✦</span><span style="font-size:12px;color:rgba(245,240,224,0.85);">${p}</span></div>`).join('');
+    document.getElementById('fg-card-tags').innerHTML=tags.map(t=>`<span style="padding:4px 10px;border-radius:20px;font-size:11px;border:0.5px solid rgba(212,175,55,0.4);color:#d4af37;background:rgba(212,175,55,0.08);">${t}</span>`).join('');
+    const hp=[];if(hSem)hp.push('Lun–Ven: '+hSem);if(hSam)hp.push('Sam: '+hSam);if(dim)hp.push('Dim: ouvert');
+    document.getElementById('fg-card-horaires').textContent=hp.join(' · ')||'Non précisés';
+    document.getElementById('fg-card-tel').textContent=tel||'Non précisé';
+    if(email){document.getElementById('fg-card-email-row').style.display='block';document.getElementById('fg-card-email').textContent=email;}
+    document.getElementById('fg-card-langues').textContent=langues.join(', ')||'Non précisées';
+    if(delai){document.getElementById('fg-card-delai-row').style.display='block';document.getElementById('fg-card-delai').textContent=delai;}
+    if(tarifs.length){document.getElementById('fg-card-tarifs-list').innerHTML=tarifs.map(t=>`<div style="display:flex;justify-content:space-between;font-size:13px;"><span>${t.label}</span><span style="font-weight:600;">${t.prix}</span></div>`).join('');}
+    else{document.getElementById('fg-card-tarifs').style.display='none';}
+    fgQRCode();
+    const ficheData={nom,adresse,tel,email,hSem,hSam,dim,delai,tags,langues,tarifs,accroche:parsed.accroche,points:parsed.points};
+window.saveFicheGarage&&window.saveFicheGarage(ficheData).then(id=>{const url=`https://mecanocheck.vercel.app/garage/${id}`;document.getElementById('fg-qr').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}&color=d4af37&bgcolor=0f0f0f" style="width:60px;height:60px;">`;localStorage.setItem('fg_garage_id',id);});
+    document.getElementById('fg-loading').style.display='none';
+    document.getElementById('fg-result').style.display='block';
+  }catch(e){
+    document.getElementById('fg-loading').style.display='none';
+    document.getElementById('fg-form').style.display='block';
+    alert('Erreur IA. Réessaie !');
+  }
+}
+function fgQRCode(){
+  const id=localStorage.getItem('fg_garage_id')||'preview';
+  const url=`https://mecanocheck.vercel.app/garage/${id}`;
+  document.getElementById('fg-qr').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}&color=d4af37&bgcolor=0f0f0f" style="width:60px;height:60px;">`;
+  document.getElementById('fg-qr-container').style.display='none';
+}
+function fgPartager(){
+  const nom=document.getElementById('fg-card-nom').textContent;
+  const id=localStorage.getItem('fg_garage_id')||'preview';
+  const url=`https://mecanocheck.vercel.app/garage/${id}`;
+  if(navigator.share){navigator.share({title:nom,text:'Découvre ce garage sur MécanoCheck',url});}
+  else{navigator.clipboard.writeText(url);alert('Lien copié !');}
+}
+function addDevisLine(){const div=document.createElement('div');div.className='devis-line';div.innerHTML=`<input type="text" placeholder="Prestation" class="dl-desc"><input type="number" placeholder="Qté" class="dl-qty" value="1" oninput="updateDevisTotal()"><input type="number" placeholder="Prix HT" class="dl-prix" oninput="updateDevisTotal()"><button class="devis-del" onclick="this.closest('.devis-line').remove();updateDevisTotal()">✕</button>`;document.getElementById('devis-lines').appendChild(div);}
+function updateDevisTotal(){let t=0;document.querySelectorAll('.devis-line').forEach(l=>{t+=(parseFloat(l.querySelector('.dl-qty').value)||0)*(parseFloat(l.querySelector('.dl-prix').value)||0);});document.getElementById('devis-total').textContent=(t*1.2).toFixed(2)+' €';}
+async function genererDevisPDF(){
+  const{jsPDF}=window.jspdf;const doc=new jsPDF();
+  const garage=document.getElementById('db-garage').value||'Garage';const client=document.getElementById('db-client').value||'Client';const vehicule=document.getElementById('db-vehicule').value||'Véhicule';
+  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.text('DEVIS',105,20,{align:'center'});
+  doc.setFontSize(12);doc.setFont('helvetica','normal');
+  doc.text(garage,20,35);doc.text(document.getElementById('db-adresse').value||'',20,42);doc.text(document.getElementById('db-tel').value||'',20,49);
+  doc.text('Client: '+client,20,65);doc.text('Véhicule: '+vehicule,20,72);doc.text('Date: '+new Date().toLocaleDateString('fr-FR'),150,65);
+  let y=95;doc.setFont('helvetica','bold');doc.text('Prestation',20,y);doc.text('Qté',120,y);doc.text('Prix HT',145,y);doc.text('Total HT',170,y);doc.line(20,y+2,190,y+2);y+=8;doc.setFont('helvetica','normal');
+  let totalHT=0;
+  document.querySelectorAll('.devis-line').forEach(l=>{const desc=l.querySelector('.dl-desc').value;const qty=parseFloat(l.querySelector('.dl-qty').value)||0;const prix=parseFloat(l.querySelector('.dl-prix').value)||0;const total=qty*prix;totalHT+=total;if(desc){doc.text(desc.substring(0,40),20,y);doc.text(qty.toString(),120,y);doc.text(prix.toFixed(2)+'€',145,y);doc.text(total.toFixed(2)+'€',170,y);y+=8;}});
+  doc.line(20,y,190,y);y+=8;doc.text('Total HT:',145,y);doc.text(totalHT.toFixed(2)+'€',170,y);y+=6;doc.text('TVA 20%:',145,y);doc.text((totalHT*0.2).toFixed(2)+'€',170,y);y+=6;doc.setFont('helvetica','bold');doc.text('Total TTC:',145,y);doc.text((totalHT*1.2).toFixed(2)+'€',170,y);
+  doc.save('devis-'+client.replace(/ /g,'-')+'.pdf');showToast('PDF généré !');
+}
+
+// DIAG PRO
+async function lancerDiagPro(){
+  const vehicule=document.getElementById('diag-vehicule').value.trim();const symptomes=document.getElementById('diag-symptomes').value.trim();
+  if(!symptomes){alert('Décrivez les symptômes.');return;}
+  document.getElementById('diag-pro-result').innerHTML='<div style="text-align:center;padding:20px;"><div class="spinner"></div></div>';
+  try{
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,messages:[{role:'user',content:`Mécanicien expert. Diagnostic pour:\nVéhicule: ${vehicule||'?'}\nKm: ${document.getElementById('diag-km').value||'?'}\nSymptômes: ${symptomes}\nJSON: {"panne_probable":"","probabilite":85,"autres_causes":[""],"pieces_a_verifier":[""],"cout_estime":"","urgence":"haute","conseil_immediat":""}`}]})});
+    const data=await res.json();const r=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    const urgColor=r.urgence==='haute'?'var(--r)':r.urgence==='moyenne'?'var(--o)':'var(--g)';
+    document.getElementById('diag-pro-result').innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;"><div><div class="sec-title">PANNE PROBABLE</div><div style="font-size:16px;font-weight:800;">${r.panne_probable}</div></div><div style="text-align:right;"><div class="sec-title">PROBABILITÉ</div><div style="font-size:20px;font-weight:900;color:${urgColor};">${r.probabilite}%</div></div></div><div class="rrow"><span class="rl">Coût estimé</span><span class="rv">${r.cout_estime}</span></div><div class="rrow"><span class="rl">Urgence</span><span class="rv" style="color:${urgColor};">${r.urgence.toUpperCase()}</span></div><div style="margin-top:10px;"><div class="sec-title">PIÈCES À VÉRIFIER</div>${r.pieces_a_verifier.map(p=>`<div style="font-size:13px;padding:3px 0;color:var(--m);">• ${p}</div>`).join('')}</div><div class="arg-box" style="margin-top:10px;">${r.conseil_immediat}</div></div>`;
+  }catch(e){document.getElementById('diag-pro-result').innerHTML='<div class="card-sm" style="color:var(--r);">Erreur.</div>';}
+}
+
+// EXPORT PDF
+async function exportPDF(){
+  if(!currentResult){alert('Aucun résultat.');return;}
+  const{jsPDF}=window.jspdf;const doc=new jsPDF();
+  doc.setFontSize(20);doc.setFont('helvetica','bold');doc.text('MécanoCheck — Rapport',105,20,{align:'center'});
+  doc.setFontSize(12);doc.setFont('helvetica','normal');
+  doc.text('Date: '+new Date().toLocaleDateString('fr-FR'),20,35);doc.text('Véhicule: '+(currentEntry?.vehicule||'—'),20,42);doc.text('Devis: '+(currentEntry?.devis||'—')+'€',20,49);
+  doc.setFont('helvetica','bold');doc.text('VERDICT: '+currentResult.score_label,20,62);doc.setFont('helvetica','normal');
+  doc.text('Fourchette: '+currentResult.fourchette_min+'€ – '+currentResult.fourchette_max+'€',20,70);
+  doc.line(20,80,190,80);doc.setFont('helvetica','bold');doc.text('DIAGNOSTIC',20,90);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize(currentResult.diagnostic_explication||'',170),20,98);
+  doc.setFont('helvetica','bold');doc.text('ARGUMENT',20,125);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize(currentResult.argument||'',170),20,133);
+  doc.text('Généré par MécanoCheck',105,280,{align:'center'});doc.save('mecanocheck-rapport.pdf');showToast('PDF exporté !');
+}
+
+// TOAST
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+// PWA
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-banner').style.display='flex';});
+function installApp(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-banner').style.display='none';});}}
+function dismissInstall(){document.getElementById('install-banner').style.display='none';}
+window.addEventListener('appinstalled',()=>{document.getElementById('install-banner').style.display='none';deferredPrompt=null;});
+
+// QR SCAN depuis URL
+(function(){
+  try{
+    const params=new URLSearchParams(window.location.search);const vd=params.get('vehicule');if(!vd||vd.length<2)return;
+    const data=JSON.parse(decodeURIComponent(vd));if(!data||!data.v)return;
+    document.body.innerHTML=`<div style="font-family:Inter,sans-serif;max-width:430px;margin:0 auto;padding:20px;background:#F0F2F5;min-height:100vh;"><div style="background:linear-gradient(135deg,#FF6B35,#E55A00);border-radius:20px;padding:22px;color:#fff;margin-bottom:16px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">🔧</div><div style="font-size:20px;font-weight:800;">Fiche Véhicule</div><div style="font-size:13px;opacity:0.8;margin-top:4px;">Partagé via MécanoCheck</div></div><div style="background:#fff;border-radius:20px;padding:18px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:#7B8599;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">🚗 Véhicule</div><div style="font-size:18px;font-weight:800;color:#0A0E1A;">${data.v}</div>${data.km?`<div style="font-size:14px;color:#7B8599;margin-top:4px;">⏱ ${data.km} km</div>`:''}${data.ct?`<div style="font-size:14px;color:#7B8599;margin-top:4px;">📅 CT : ${data.ct}</div>`:''}</div>${data.reparations?.length?`<div style="background:#fff;border-radius:20px;padding:18px;"><div style="font-size:11px;font-weight:700;color:#7B8599;text-transform:uppercase;margin-bottom:10px;">🔧 Réparations</div>${data.reparations.map(r=>`<div style="font-size:13px;color:#444;padding:8px 0;border-bottom:1px solid #F0F2F5;">${r}</div>`).join('')}</div>`:''}<div style="text-align:center;margin-top:20px;font-size:12px;color:#7B8599;">Généré avec MécanoCheck</div></div>`;
+  }catch(e){}
+})();
+
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
