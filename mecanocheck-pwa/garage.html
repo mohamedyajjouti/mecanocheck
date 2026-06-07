@@ -49,6 +49,19 @@
     document.getElementById('loading').style.display = 'none';
     document.getElementById('fiche').style.display = 'block';
 
+    // Badge certifié
+    const badgeEl = document.getElementById('pub-badge');
+    if (f.certifie === true) {
+      badgeEl.innerHTML = '<div>⭐ CERTIFIÉ</div><div>MécanoCheck</div>';
+      badgeEl.style.background = 'rgba(212,175,55,0.2)';
+      badgeEl.style.borderColor = 'rgba(212,175,55,0.6)';
+    } else {
+      badgeEl.innerHTML = '<div>🔧 MEMBRE</div><div>MécanoCheck</div>';
+      badgeEl.style.background = 'rgba(91,95,239,0.1)';
+      badgeEl.style.borderColor = 'rgba(91,95,239,0.3)';
+      badgeEl.querySelector('div').style.color = '#5B5FEF';
+    }
+
     // Avatar
     const avatar = document.getElementById('pub-avatar');
     avatar.textContent = (f.nom || 'G').charAt(0).toUpperCase();
@@ -422,7 +435,7 @@ body {
               <div class="fiche-adresse" id="pub-adresse"></div>
             </div>
           </div>
-          <div class="badge-verifie">
+          <div class="badge-verifie" id="pub-badge">
             <div>VÉRIFIÉ</div>
             <div>MécanoCheck</div>
           </div>
