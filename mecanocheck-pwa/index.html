@@ -1348,7 +1348,7 @@ async function doLogin(){
     // Vérifier que l'email est confirmé
     if(!user.emailVerified){
       await window.firebaseDeconnecter();
-      errEl.textContent='Confirme ton email d'abord. Vérifie ta boîte mail.';
+      errEl.textContent="Confirme ton email. Vérifie ta boîte mail.";
       errEl.style.display='block';
       return;
     }
