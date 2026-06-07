@@ -404,7 +404,7 @@ textarea{resize:none;line-height:1.5;}
           </div>
           <div class="quick-card" onclick="showTab('chat')">
             <div class="qc-icon" style="background:var(--ol);">💬</div>
-            <div class="qc-title">Mohamed IA</div>
+            <div class="qc-title">Meca IA</div>
             <div class="qc-sub">Expert mécanique 24/7</div>
           </div>
           <div class="quick-card" onclick="showTab('comparer')">
@@ -609,7 +609,7 @@ textarea{resize:none;line-height:1.5;}
         </div>
         <div class="card">
           <div class="menu-list-item" onclick="showTab('premium')"><div class="mli-icon" style="background:var(--yl);">⭐</div><div class="mli-info"><div class="mli-title">Passer Premium</div><div class="mli-sub">Analyses illimitées + PDF</div></div><span class="mli-arrow">›</span></div>
-          <div class="menu-list-item" onclick="showTab('chat')"><div class="mli-icon" style="background:var(--ol);">💬</div><div class="mli-info"><div class="mli-title">Mohamed IA</div><div class="mli-sub">Expert mécanique 24/7</div></div><span class="mli-arrow">›</span></div>
+          <div class="menu-list-item" onclick="showTab('chat')"><div class="mli-icon" style="background:var(--ol);">💬</div><div class="mli-info"><div class="mli-title">Meca IA</div><div class="mli-sub">Expert mécanique 24/7</div></div><span class="mli-arrow">›</span></div>
           <div class="menu-list-item" onclick="showTab('arnaques')"><div class="mli-icon" style="background:var(--rl);">⚠️</div><div class="mli-info"><div class="mli-title">Arnaques fréquentes</div><div class="mli-sub">Les pièges à éviter</div></div><span class="mli-arrow">›</span></div>
           <div class="menu-list-item" onclick="showTab('annonce')"><div class="mli-icon" style="background:var(--gl);">🔍</div><div class="mli-info"><div class="mli-title">Analyser une annonce</div><div class="mli-sub">LeBonCoin, 2ème main...</div></div><span class="mli-arrow">›</span></div>
           <div class="menu-list-item" onclick="showTab('jeune')"><div class="mli-icon" style="background:var(--ol);">🚗</div><div class="mli-info"><div class="mli-title">Jeune conducteur</div><div class="mli-sub">Guide complet illustré</div></div><span class="mli-arrow">›</span></div>
@@ -630,12 +630,12 @@ textarea{resize:none;line-height:1.5;}
     <div class="screen" id="screen-chat" style="padding:0;">
       <div class="chatheader">
         <div class="chatavatar">🔧</div>
-        <div><div class="chatname">Mohamed</div><div class="chatstatus">● Expert mécanique IA</div></div>
+        <div><div class="chatname">Meca</div><div class="chatstatus">● Expert mécanique IA</div></div>
         <button class="chatclear" onclick="clearChat()">Effacer</button>
         <button class="btn-back" onclick="showTab('accueil')" style="margin-left:8px;">✕</button>
       </div>
       <div class="chatmsgs" id="chatmsgs">
-        <div class="cbub bot"><div class="btext">Bonjour ! Je suis Mohamed, votre expert mécanique IA. 🔧 Décrivez-moi votre problème ou posez-moi n'importe quelle question sur votre voiture !</div></div>
+        <div class="cbub bot"><div class="btext">Bonjour ! Je suis Meca, votre expert mécanique IA. 🔧 Décrivez-moi votre problème ou posez-moi n'importe quelle question sur votre voiture !</div></div>
       </div>
       <div class="chatbar">
         <button class="micbtn" id="mic-btn" onclick="toggleMic()">
@@ -715,7 +715,7 @@ textarea{resize:none;line-height:1.5;}
           <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Export PDF professionnel</div></div>
           <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Scanner devis par photo</div></div>
           <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Comparateur devis illimité</div></div>
-          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Chat Mohamed IA illimité</div></div>
+          <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Chat Meca IA illimité</div></div>
           <div class="feat-row"><div class="feat-check" style="background:var(--gl);color:var(--gd);">✓</div><div>Prix pièces tous fournisseurs</div></div>
         </div>
       </div>
@@ -1466,7 +1466,7 @@ async function sendChat(){
   input.value='';addMsg('user',msg);chatHistory.push({role:'user',content:msg});
   const typing=addMsg('bot','<div class="bdots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>');
   try{
-    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:600,messages:[{role:'user',content:'Tu es Mohamed, expert mécanicien français. Réponds en français, clair et pratique, 2-4 phrases max. Conseils concrets et honnêtes.'},{role:'assistant',content:'Compris, je suis Mohamed votre expert mécanique.'}, ...chatHistory]})});
+    const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:600,messages:[{role:'user',content:'Tu es Meca, expert mécanicien français. Réponds en français, clair et pratique, 2-4 phrases max. Conseils concrets et honnêtes.'},{role:'assistant',content:'Compris, je suis Meca votre expert mécanique.'}, ...chatHistory]})});
     const data=await res.json();const reply=data.content[0].text;
     typing.querySelector('.btext').innerHTML=reply;chatHistory.push({role:'assistant',content:reply});
     if(isSpeaking)speak(reply);
@@ -1474,7 +1474,7 @@ async function sendChat(){
 }
 
 function addMsg(type,content){const msgs=document.getElementById('chatmsgs');const div=document.createElement('div');div.className='cbub '+type;div.innerHTML=`<div class="btext">${content}</div>`;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;}
-function clearChat(){chatHistory=[];document.getElementById('chatmsgs').innerHTML='<div class="cbub bot"><div class="btext">Bonjour ! Je suis Mohamed 🔧 Comment puis-je vous aider ?</div></div>';}
+function clearChat(){chatHistory=[];document.getElementById('chatmsgs').innerHTML='<div class="cbub bot"><div class="btext">Bonjour ! Je suis Meca 🔧 Comment puis-je vous aider ?</div></div>';}
 function toggleMic(){
   if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){alert('Non supporté.');return;}
   if(isRecording){recognition&&recognition.stop();isRecording=false;document.getElementById('mic-btn').classList.remove('rec');return;}
