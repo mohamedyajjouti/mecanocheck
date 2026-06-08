@@ -1425,7 +1425,9 @@ window.onAuthChanged = async function(user){
 const nomGarage=fiche&&fiche.nom?fiche.nom:user.email;
 proHeader.innerHTML=`<div style="font-size:12px;color:rgba(255,255,255,0.7);">Connecté</div><div style="font-size:14px;font-weight:700;">${nomGarage}</div>`;
     } else {
-      proHeader.innerHTML=`<div style="font-size:12px;color:rgba(255,255,255,0.7);">Non connecté</div>`;
+      const fiche=await window.getFicheGarage(user.uid);
+const nomGarage=fiche&&fiche.nom?fiche.nom:user.email;
+proHeader.innerHTML=`<div style="font-size:12px;color:rgba(255,255,255,0.7);">Connecté</div><div style="font-size:14px;font-weight:700;">${nomGarage}</div>`;
     }
   }
   // Charger la fiche existante si connecté
